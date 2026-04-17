@@ -1,14 +1,22 @@
-# Mode: interview-prep — Company-Specific Interview Intelligence
+# Mode: interview-prep — Company-Specific Interview Intelligence (Consultancy)
 
 When the user asks to prep for an interview at a specific company+role, or when an evaluation scores 4.0+ and the user updates status to `Interview`, run this mode.
+
+## Consultant Selection
+
+If the user says "prep alice for Acme interview" → use alice. Otherwise:
+1. Check `data/applications.md` for which consultant(s) have `Interview` status at that company
+2. If only one → use that consultant
+3. If multiple → ask: "Which consultant is interviewing? Found: alice (Interview), bob (Interview)"
 
 ## Inputs
 
 1. **Company name** and **role title** (required)
-2. **Evaluation report** in `reports/` (if exists) — read for archetype, gaps, matched proof points
-3. **Story bank** at `interview-prep/story-bank.md` — read for existing prepared stories
-4. **CV** at `cv.md` + `article-digest.md` — read for proof points
-5. **Profile** at `config/profile.yml` + `modes/_profile.md` — read for candidate context
+2. **Consultant slug** (required — resolved above)
+3. **Evaluation report** in `reports/` (if exists) — read for archetype, gaps, matched proof points (use the per-consultant sections for this slug)
+4. **Story bank** at `consultants/{slug}/story-bank.md` — read for existing prepared stories
+5. **CV** at `consultants/{slug}/cv.md` + `consultants/{slug}/article-digest.md` — read for proof points
+6. **Profile** at `consultants/{slug}/profile.yml` + `consultants/{slug}/_profile.md` + `modes/_profile.md` — read for consultant context
 
 ## Step 1 — Research
 
@@ -67,14 +75,14 @@ For each: the question, source, and what a strong answer looks like for this can
 
 ### Behavioral
 Questions about leadership, conflict, collaboration, failure.
-For each: the question, source, and which story from `story-bank.md` maps best.
+For each: the question, source, and which story from `consultants/{slug}/story-bank.md` maps best.
 
 ### Role-Specific
 Questions tied to the specific job description (archetype-aware).
-For each: the question, why they're likely asking it (what JD requirement it maps to), and the candidate's best angle.
+For each: the question, why they're likely asking it (what JD requirement it maps to), and the consultant's best angle.
 
 ### Background Red Flags
-Questions the interviewer will probably ask about gaps, transitions, or unusual elements in the candidate's background. Read `_profile.md` and `cv.md` to identify what might raise questions.
+Questions the interviewer will probably ask about gaps, transitions, or unusual elements in the consultant's background. Read the consultant's `_profile.md` and `cv.md` to identify what might raise questions.
 For each: the likely question, why it comes up, and a recommended framing (honest, specific, forward-looking — never defensive).
 
 ## Step 5 — Story Bank Mapping
@@ -89,7 +97,7 @@ For each: the likely question, why it comes up, and a recommended framing (hones
 
 For each gap, suggest: "You need a story about {topic}. Consider: {specific experience from cv.md that could become a STAR+R story}."
 
-If the user wants to draft missing stories, help them build STAR+R format and append to `interview-prep/story-bank.md`.
+If the user wants to draft missing stories, help them build STAR+R format and append to `consultants/{slug}/story-bank.md`.
 
 ## Step 6 — Technical Prep Checklist
 

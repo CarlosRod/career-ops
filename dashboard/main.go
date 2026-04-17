@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -151,11 +154,47 @@ func (m appModel) View() string {
 	}
 }
 
+// has10ColTracker checks if applications.md has the 10-column header with Candidate column.
+func has10ColTracker(careerOpsPath string) bool {
+	paths := []string{
+		filepath.Join(careerOpsPath, "data", "applications.md"),
+		filepath.Join(careerOpsPath, "applications.md"),
+	}
+	for _, p := range paths {
+		f, err := os.Open(p)
+		if err != nil {
+			continue
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "|") && strings.Contains(line, "Candidate") {
+				return true
+			}
+			// Only check first few lines (header area)
+			if strings.HasPrefix(line, "|") && strings.Contains(line, "---") {
+				break
+			}
+		}
+	}
+	return false
+}
+
 func main() {
 	pathFlag := flag.String("path", ".", "Path to career-ops directory")
 	flag.Parse()
 
 	careerOpsPath := *pathFlag
+
+	// Guard: detect 10-column tracker format (consultancy migration)
+	// The dashboard parser has not been updated for the new schema yet.
+	if has10ColTracker(careerOpsPath) {
+		fmt.Fprintln(os.Stderr, "Error: Dashboard not yet updated for 10-column tracker (Phase 5).")
+		fmt.Fprintln(os.Stderr, "The tracker includes a Candidate column from the consultancy migration.")
+		fmt.Fprintln(os.Stderr, "Use the CLI tracker mode instead: /career-ops tracker")
+		os.Exit(1)
+	}
 
 	// Load applications
 	apps := data.ParseApplications(careerOpsPath)

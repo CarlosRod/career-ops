@@ -7,9 +7,13 @@
  * - 8-col: num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport (no notes)
  * - Pipe-delimited (markdown table row): | col | col | ... |
  *
- * Dedup: company normalized + role fuzzy match + report number match
+ * Dedup: company normalized + role fuzzy match + candidate slug + report number match
  * If duplicate with higher score → update in-place, update report link
  * Validates status against states.yml (rejects non-canonical, logs warning)
+ *
+ * 10-column format (consultancy mode):
+ *   Markdown: # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes
+ *   TSV:      num \t date \t company \t role \t candidate \t status \t score \t pdf \t report \t notes
  *
  * Run: node career-ops/merge-tracker.mjs [--dry-run] [--verify]
  */
@@ -18,6 +22,7 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync, renameSync, exists
 import { join, basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
+import { normalizeCompany, roleMatch } from './lib/normalize.mjs';
 
 const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original)
@@ -67,17 +72,6 @@ function validateStatus(status) {
   return 'Evaluated';
 }
 
-function normalizeCompany(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function roleFuzzyMatch(a, b) {
-  const wordsA = a.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-  const wordsB = b.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-  const overlap = wordsA.filter(w => wordsB.some(wb => wb.includes(w) || w.includes(wb)));
-  return overlap.length >= 2;
-}
-
 function extractReportNum(reportStr) {
   const m = reportStr.match(/\[(\d+)\]/);
   return m ? parseInt(m[1]) : null;
@@ -90,13 +84,15 @@ function parseScore(s) {
 
 function parseAppLine(line) {
   const parts = line.split('|').map(s => s.trim());
-  if (parts.length < 9) return null;
+  // 10-col: | # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes |
+  if (parts.length < 10) return null;
   const num = parseInt(parts[1]);
   if (isNaN(num) || num === 0) return null;
   return {
     num, date: parts[2], company: parts[3], role: parts[4],
-    score: parts[5], status: parts[6], pdf: parts[7], report: parts[8],
-    notes: parts[9] || '', raw: line,
+    candidate: parts[5],
+    score: parts[6], status: parts[7], pdf: parts[8], report: parts[9],
+    notes: parts[10] || '', raw: line,
   };
 }
 
@@ -114,52 +110,51 @@ function parseTsvContent(content, filename) {
   // Detect pipe-delimited (markdown table row)
   if (content.startsWith('|')) {
     parts = content.split('|').map(s => s.trim()).filter(Boolean);
-    if (parts.length < 8) {
-      console.warn(`⚠️  Skipping malformed pipe-delimited ${filename}: ${parts.length} fields`);
+    if (parts.length < 9) {
+      console.warn(`⚠️  Skipping malformed pipe-delimited ${filename}: ${parts.length} fields (expected 10-col format)`);
       return null;
     }
-    // Format: num | date | company | role | score | status | pdf | report | notes
+    // 10-col format: num | date | company | role | candidate | score | status | pdf | report | notes
     addition = {
       num: parseInt(parts[0]),
       date: parts[1],
       company: parts[2],
       role: parts[3],
-      score: parts[4],
-      status: validateStatus(parts[5]),
-      pdf: parts[6],
-      report: parts[7],
-      notes: parts[8] || '',
+      candidate: parts[4],
+      score: parts[5],
+      status: validateStatus(parts[6]),
+      pdf: parts[7],
+      report: parts[8],
+      notes: parts[9] || '',
     };
   } else {
     // Tab-separated
     parts = content.split('\t');
-    if (parts.length < 8) {
-      console.warn(`⚠️  Skipping malformed TSV ${filename}: ${parts.length} fields`);
+
+    // Reject legacy 9-col TSVs
+    if (parts.length >= 8 && parts.length < 10) {
+      console.error(`❌ ${filename}: 9-column TSV detected. Run 'node migrate-to-consultancy.mjs' first to migrate to 10-column format.`);
+      return null;
+    }
+    if (parts.length < 10) {
+      console.warn(`⚠️  Skipping malformed TSV ${filename}: ${parts.length} fields (expected 10)`);
       return null;
     }
 
-    // Detect column order: some TSVs have (status, score), others have (score, status)
-    // Heuristic: if col4 looks like a score and col5 looks like a status, they're swapped
-    const col4 = parts[4].trim();
+    // 10-col TSV: num \t date \t company \t role \t candidate \t status \t score \t pdf \t report \t notes
+    // Detect status/score swap: col5 should be status, col6 should be score
     const col5 = parts[5].trim();
-    const col4LooksLikeScore = /^\d+\.?\d*\/5$/.test(col4) || col4 === 'N/A' || col4 === 'DUP';
+    const col6 = parts[6].trim();
     const col5LooksLikeScore = /^\d+\.?\d*\/5$/.test(col5) || col5 === 'N/A' || col5 === 'DUP';
-    const col4LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col4);
-    const col5LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col5);
+    const col6LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col6);
 
     let statusCol, scoreCol;
-    if (col4LooksLikeStatus && !col4LooksLikeScore) {
-      // Standard format: col4=status, col5=score
-      statusCol = col4; scoreCol = col5;
-    } else if (col4LooksLikeScore && col5LooksLikeStatus) {
-      // Swapped format: col4=score, col5=status
-      statusCol = col5; scoreCol = col4;
-    } else if (col5LooksLikeScore && !col4LooksLikeScore) {
-      // col5 is definitely score → col4 must be status
-      statusCol = col4; scoreCol = col5;
+    if (col5LooksLikeScore && col6LooksLikeStatus) {
+      // Swapped: col5=score, col6=status
+      statusCol = col6; scoreCol = col5;
     } else {
-      // Default: standard format (status before score)
-      statusCol = col4; scoreCol = col5;
+      // Standard: col5=status, col6=score
+      statusCol = col5; scoreCol = col6;
     }
 
     addition = {
@@ -167,11 +162,12 @@ function parseTsvContent(content, filename) {
       date: parts[1],
       company: parts[2],
       role: parts[3],
+      candidate: parts[4].trim(),
       status: validateStatus(statusCol),
       score: scoreCol,
-      pdf: parts[6],
-      report: parts[7],
-      notes: parts[8] || '',
+      pdf: parts[7],
+      report: parts[8],
+      notes: parts[9] || '',
     };
   }
 
@@ -196,7 +192,7 @@ const existingApps = [];
 let maxNum = 0;
 
 for (const line of appLines) {
-  if (line.startsWith('|') && !line.includes('---') && !line.includes('Empresa')) {
+  if (line.startsWith('|') && !line.includes('---') && !line.includes('Company') && !line.includes('Empresa')) {
     const app = parseAppLine(line);
     if (app) {
       existingApps.push(app);
@@ -245,24 +241,25 @@ for (const file of tsvFiles) {
   let duplicate = null;
 
   if (reportNum) {
-    // Check if this report number already exists
+    // Check if this report number + candidate already exists
     duplicate = existingApps.find(app => {
       const existingReportNum = extractReportNum(app.report);
-      return existingReportNum === reportNum;
+      return existingReportNum === reportNum && app.candidate === addition.candidate;
     });
   }
 
   if (!duplicate) {
     // Exact entry number match
-    duplicate = existingApps.find(app => app.num === addition.num);
+    duplicate = existingApps.find(app => app.num === addition.num && app.candidate === addition.candidate);
   }
 
   if (!duplicate) {
-    // Company + role fuzzy match
-    const normCompany = normalizeCompany(addition.company);
+    // Company + role + candidate fuzzy match
+    const normComp = normalizeCompany(addition.company);
     duplicate = existingApps.find(app => {
-      if (normalizeCompany(app.company) !== normCompany) return false;
-      return roleFuzzyMatch(addition.role, app.role);
+      if (app.candidate !== addition.candidate) return false;
+      if (normalizeCompany(app.company) !== normComp) return false;
+      return roleMatch(addition.role, app.role);
     });
   }
 
@@ -271,15 +268,15 @@ for (const file of tsvFiles) {
     const oldScore = parseScore(duplicate.score);
 
     if (newScore > oldScore) {
-      console.log(`🔄 Update: #${duplicate.num} ${addition.company} — ${addition.role} (${oldScore}→${newScore})`);
+      console.log(`🔄 Update: #${duplicate.num} ${addition.company} — ${addition.role} [${addition.candidate}] (${oldScore}→${newScore})`);
       const lineIdx = appLines.indexOf(duplicate.raw);
       if (lineIdx >= 0) {
-        const updatedLine = `| ${duplicate.num} | ${addition.date} | ${addition.company} | ${addition.role} | ${addition.score} | ${duplicate.status} | ${duplicate.pdf} | ${addition.report} | Re-eval ${addition.date} (${oldScore}→${newScore}). ${addition.notes} |`;
+        const updatedLine = `| ${duplicate.num} | ${addition.date} | ${addition.company} | ${addition.role} | ${addition.candidate} | ${addition.score} | ${duplicate.status} | ${duplicate.pdf} | ${addition.report} | Re-eval ${addition.date} (${oldScore}→${newScore}). ${addition.notes} |`;
         appLines[lineIdx] = updatedLine;
         updated++;
       }
     } else {
-      console.log(`⏭️  Skip: ${addition.company} — ${addition.role} (existing #${duplicate.num} ${oldScore} >= new ${newScore})`);
+      console.log(`⏭️  Skip: ${addition.company} — ${addition.role} [${addition.candidate}] (existing #${duplicate.num} ${oldScore} >= new ${newScore})`);
       skipped++;
     }
   } else {
@@ -287,10 +284,10 @@ for (const file of tsvFiles) {
     const entryNum = addition.num > maxNum ? addition.num : ++maxNum;
     if (addition.num > maxNum) maxNum = addition.num;
 
-    const newLine = `| ${entryNum} | ${addition.date} | ${addition.company} | ${addition.role} | ${addition.score} | ${addition.status} | ${addition.pdf} | ${addition.report} | ${addition.notes} |`;
+    const newLine = `| ${entryNum} | ${addition.date} | ${addition.company} | ${addition.role} | ${addition.candidate} | ${addition.score} | ${addition.status} | ${addition.pdf} | ${addition.report} | ${addition.notes} |`;
     newLines.push(newLine);
     added++;
-    console.log(`➕ Add #${entryNum}: ${addition.company} — ${addition.role} (${addition.score})`);
+    console.log(`➕ Add #${entryNum}: ${addition.company} — ${addition.role} [${addition.candidate}] (${addition.score})`);
   }
 }
 

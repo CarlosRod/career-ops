@@ -102,14 +102,14 @@ for (let i = 0; i < lines.length; i++) {
   if (!line.startsWith('|')) continue;
 
   const parts = line.split('|').map(s => s.trim());
-  // Format: ['', '#', 'fecha', 'empresa', 'rol', 'score', 'STATUS', 'pdf', 'report', 'notas', '']
-  if (parts.length < 9) continue;
+  // 10-col: ['', '#', 'date', 'company', 'role', 'candidate', 'score', 'STATUS', 'pdf', 'report', 'notes', '']
+  if (parts.length < 10) continue;
   if (parts[1] === '#' || parts[1] === '---' || parts[1] === '') continue;
 
   const num = parseInt(parts[1]);
   if (isNaN(num)) continue;
 
-  const rawStatus = parts[6];
+  const rawStatus = parts[7]; // status is at index 7 in 10-col format
   const result = normalizeStatus(rawStatus);
 
   if (result.unknown) {
@@ -121,21 +121,21 @@ for (let i = 0; i < lines.length; i++) {
 
   // Apply change
   const oldStatus = rawStatus;
-  parts[6] = result.status;
+  parts[7] = result.status;
 
   // Move DUPLICADO info to notes if needed
-  if (result.moveToNotes && parts[9]) {
-    const existing = parts[9] || '';
+  if (result.moveToNotes && parts[10]) {
+    const existing = parts[10] || '';
     if (!existing.includes(result.moveToNotes)) {
-      parts[9] = result.moveToNotes + (existing ? '. ' + existing : '');
+      parts[10] = result.moveToNotes + (existing ? '. ' + existing : '');
     }
-  } else if (result.moveToNotes && !parts[9]) {
-    parts[9] = result.moveToNotes;
+  } else if (result.moveToNotes && !parts[10]) {
+    parts[10] = result.moveToNotes;
   }
 
   // Also strip bold from score field
-  if (parts[5]) {
-    parts[5] = parts[5].replace(/\*\*/g, '');
+  if (parts[6]) {
+    parts[6] = parts[6].replace(/\*\*/g, '');
   }
 
   // Reconstruct line

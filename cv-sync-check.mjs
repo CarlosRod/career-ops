@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 
 /**
- * cv-sync-check.mjs — Validates that the career-ops setup is consistent.
+ * cv-sync-check.mjs — Validates consultant roster integrity.
  *
  * Checks:
- * 1. cv.md exists
- * 2. config/profile.yml exists and has required fields
- * 3. No hardcoded metrics in _shared.md or batch/batch-prompt.md
- * 4. article-digest.md freshness (if exists)
+ * 1. config/firm.yml exists
+ * 2. consultants/ has at least one consultant with cv.md + profile.yml
+ * 3. Each consultant's profile.yml has required fields
+ * 4. No hardcoded metrics in _shared.md or batch/batch-prompt.md
+ * 5. article-digest.md freshness per consultant (if exists)
+ * 6. story-bank.md presence (warn if absent — created lazily)
  */
 
-import { readFileSync, existsSync, statSync } from 'fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import yaml from 'js-yaml';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = __dirname;
@@ -20,29 +23,86 @@ const projectRoot = __dirname;
 const warnings = [];
 const errors = [];
 
-// 1. Check cv.md exists
-const cvPath = join(projectRoot, 'cv.md');
-if (!existsSync(cvPath)) {
-  errors.push('cv.md not found in project root. Create it with your CV in markdown format.');
-} else {
-  const cvContent = readFileSync(cvPath, 'utf-8');
-  if (cvContent.trim().length < 100) {
-    warnings.push('cv.md seems too short. Make sure it contains your full CV.');
-  }
+// 1. Check firm.yml exists
+const firmPath = join(projectRoot, 'config', 'firm.yml');
+if (!existsSync(firmPath)) {
+  errors.push('config/firm.yml not found. Copy from config/firm.example.yml and fill in your firm details.');
 }
 
-// 2. Check profile.yml exists
-const profilePath = join(projectRoot, 'config', 'profile.yml');
-if (!existsSync(profilePath)) {
-  errors.push('config/profile.yml not found. Copy from config/profile.example.yml and fill in your details.');
+// 2. Check consultants roster
+const consultantsDir = join(projectRoot, 'consultants');
+const consultantSlugs = [];
+
+if (!existsSync(consultantsDir)) {
+  errors.push('consultants/ directory not found. Run onboarding or migration first.');
 } else {
-  const profileContent = readFileSync(profilePath, 'utf-8');
-  const requiredFields = ['full_name', 'email', 'location'];
-  for (const field of requiredFields) {
-    if (!profileContent.includes(field) || profileContent.includes(`"Jane Smith"`)) {
-      warnings.push(`config/profile.yml may still have example data. Check field: ${field}`);
-      break;
+  const entries = readdirSync(consultantsDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const slug = entry.name;
+    const consultantDir = join(consultantsDir, slug);
+
+    // Check cv.md
+    const cvPath = join(consultantDir, 'cv.md');
+    if (!existsSync(cvPath)) {
+      errors.push(`consultants/${slug}/cv.md not found. Each consultant needs a CV.`);
+    } else {
+      const cvContent = readFileSync(cvPath, 'utf-8');
+      if (cvContent.trim().length < 100) {
+        warnings.push(`consultants/${slug}/cv.md seems too short. Make sure it contains a full CV.`);
+      }
     }
+
+    // Check profile.yml
+    const profilePath = join(consultantDir, 'profile.yml');
+    if (!existsSync(profilePath)) {
+      errors.push(`consultants/${slug}/profile.yml not found. Each consultant needs a profile.`);
+    } else {
+      try {
+        const profile = yaml.load(readFileSync(profilePath, 'utf-8'));
+        const name = profile?.candidate?.full_name;
+        const email = profile?.candidate?.email;
+        const archetypes = profile?.target_roles?.archetypes;
+        const comp = profile?.compensation?.target_range;
+
+        if (!name || name === 'Jane Smith') {
+          warnings.push(`consultants/${slug}/profile.yml: candidate.full_name is missing or still example data.`);
+        }
+        if (!email || email === 'jane@example.com') {
+          warnings.push(`consultants/${slug}/profile.yml: candidate.email is missing or still example data.`);
+        }
+        if (!archetypes || archetypes.length === 0) {
+          warnings.push(`consultants/${slug}/profile.yml: target_roles.archetypes is empty.`);
+        }
+        if (!comp) {
+          warnings.push(`consultants/${slug}/profile.yml: compensation.target_range is missing.`);
+        }
+      } catch (e) {
+        errors.push(`consultants/${slug}/profile.yml: YAML parse error — ${e.message}`);
+      }
+
+      consultantSlugs.push(slug);
+    }
+
+    // Check story-bank.md (warn only)
+    const storyPath = join(consultantDir, 'story-bank.md');
+    if (!existsSync(storyPath)) {
+      warnings.push(`consultants/${slug}/story-bank.md not found. It will be created on first evaluation.`);
+    }
+
+    // Check article-digest.md freshness
+    const digestPath = join(consultantDir, 'article-digest.md');
+    if (existsSync(digestPath)) {
+      const stats = statSync(digestPath);
+      const daysSinceModified = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60 * 24);
+      if (daysSinceModified > 30) {
+        warnings.push(`consultants/${slug}/article-digest.md is ${Math.round(daysSinceModified)} days old. Consider updating if projects have new metrics.`);
+      }
+    }
+  }
+
+  if (consultantSlugs.length === 0) {
+    errors.push('No consultants found with profile.yml. Add at least one consultant to consultants/.');
   }
 }
 
@@ -52,48 +112,40 @@ const filesToCheck = [
   { path: join(projectRoot, 'batch', 'batch-prompt.md'), name: 'batch-prompt.md' },
 ];
 
-// Pattern: numbers that look like hardcoded metrics (e.g., "170+ hours", "90% self-service")
 const metricPattern = /\b\d{2,4}\+?\s*(hours?|%|evals?|layers?|tests?|fields?|bases?)\b/gi;
 
 for (const { path, name } of filesToCheck) {
   if (!existsSync(path)) continue;
   const content = readFileSync(path, 'utf-8');
 
-  // Skip lines that are clearly instructions (contain "NEVER hardcode" etc.)
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.includes('NEVER hardcode') || line.includes('NUNCA hardcode') || line.startsWith('#') || line.startsWith('<!--')) continue;
     const matches = line.match(metricPattern);
     if (matches) {
-      warnings.push(`${name}:${i + 1} — Possible hardcoded metric: "${matches[0]}". Should this be read from cv.md/article-digest.md?`);
+      warnings.push(`${name}:${i + 1} — Possible hardcoded metric: "${matches[0]}". Should this be read from consultant CV/article-digest?`);
     }
   }
 }
 
-// 4. Check article-digest.md freshness
-const digestPath = join(projectRoot, 'article-digest.md');
-if (existsSync(digestPath)) {
-  const stats = statSync(digestPath);
-  const daysSinceModified = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60 * 24);
-  if (daysSinceModified > 30) {
-    warnings.push(`article-digest.md is ${Math.round(daysSinceModified)} days old. Consider updating if your projects have new metrics.`);
-  }
+// Output results
+console.log('\n=== career-ops roster sync check ===\n');
+
+if (consultantSlugs.length > 0) {
+  console.log(`Roster: ${consultantSlugs.length} consultant(s) — ${consultantSlugs.join(', ')}`);
 }
 
-// Output results
-console.log('\n=== career-ops sync check ===\n');
-
 if (errors.length === 0 && warnings.length === 0) {
-  console.log('All checks passed.');
+  console.log('\n✅ All checks passed.');
 } else {
   if (errors.length > 0) {
-    console.log(`ERRORS (${errors.length}):`);
-    errors.forEach(e => console.log(`  ERROR: ${e}`));
+    console.log(`\n❌ ERRORS (${errors.length}):`);
+    errors.forEach(e => console.log(`  ${e}`));
   }
   if (warnings.length > 0) {
-    console.log(`\nWARNINGS (${warnings.length}):`);
-    warnings.forEach(w => console.log(`  WARN: ${w}`));
+    console.log(`\n⚠️  WARNINGS (${warnings.length}):`);
+    warnings.forEach(w => console.log(`  ${w}`));
   }
 }
 

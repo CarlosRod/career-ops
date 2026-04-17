@@ -17,10 +17,13 @@ jds/*
 
 # User config and customization (never auto-updated)
 config/profile.yml
+config/firm.yml
 portals.yml
 modes/_profile.md
-.update-dismissed
-.update-lock
+consultants/*/
+
+# Migration backups (contain personal CV and profile data)
+.migration-backup/
 
 # Generated
 .resolved-prompt-*

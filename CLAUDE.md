@@ -12,34 +12,15 @@ The portfolio that goes with this system is also open source: [cv-santiago](http
 
 There are two layers. Read `DATA_CONTRACT.md` for the full list.
 
-**User Layer (NEVER auto-updated, personalization goes HERE):**
-- `cv.md`, `config/profile.yml`, `modes/_profile.md`, `article-digest.md`, `portals.yml`
-- `data/*`, `reports/*`, `output/*`, `interview-prep/*`
+**User Layer (firm and consultant data, personalization goes HERE):**
+- `config/firm.yml`, `consultants/*/`, `modes/_profile.md`, `portals.yml`
+- `data/*`, `reports/*`, `output/*`
 
-**System Layer (auto-updatable, DON'T put user data here):**
+**System Layer (shared logic):**
 - `modes/_shared.md`, `modes/oferta.md`, all other modes
 - `CLAUDE.md`, `*.mjs` scripts, `dashboard/*`, `templates/*`, `batch/*`
 
-**THE RULE: When the user asks to customize anything (archetypes, narrative, negotiation scripts, proof points, location policy, comp targets), ALWAYS write to `modes/_profile.md` or `config/profile.yml`. NEVER edit `modes/_shared.md` for user-specific content.** This ensures system updates don't overwrite their customizations.
-
-## Update Check
-
-On the first message of each session, run the update checker silently:
-
-```bash
-node update-system.mjs check
-```
-
-Parse the JSON output:
-- `{"status": "update-available", "local": "1.0.0", "remote": "1.1.0", "changelog": "..."}` → tell the user:
-  > "career-ops update available (v{local} → v{remote}). Your data (CV, profile, tracker, reports) will NOT be touched. Want me to update?"
-  If yes → run `node update-system.mjs apply`. If no → run `node update-system.mjs dismiss`.
-- `{"status": "up-to-date"}` → say nothing
-- `{"status": "dismissed"}` → say nothing
-- `{"status": "offline"}` → say nothing
-
-The user can also say "check for updates" or "update career-ops" at any time to force a check.
-To rollback: `node update-system.mjs rollback`
+**THE RULE: When the user asks to customize anything per-consultant (archetypes, narrative, proof points, comp targets), ALWAYS write to `consultants/{slug}/_profile.md` or `consultants/{slug}/profile.yml`. For firm-level customizations (negotiation scripts, location policy, shortlist policy), write to `modes/_profile.md` or `config/firm.yml`. NEVER edit `modes/_shared.md` for user-specific content.**
 
 ## What is career-ops
 
@@ -55,8 +36,11 @@ AI-powered job search automation built on Claude Code: pipeline tracking, offer 
 | `portals.yml` | Query and company config |
 | `templates/cv-template.html` | HTML template for CVs |
 | `generate-pdf.mjs` | Playwright: HTML to PDF |
-| `article-digest.md` | Compact proof points from portfolio (optional) |
-| `interview-prep/story-bank.md` | Accumulated STAR+R stories across evaluations |
+| `config/firm.yml` | Firm identity, shortlist policy, comp floor |
+| `consultants/{slug}/cv.md` | Per-consultant CV |
+| `consultants/{slug}/profile.yml` | Per-consultant identity, targets, comp |
+| `consultants/{slug}/article-digest.md` | Per-consultant proof points (optional) |
+| `consultants/{slug}/story-bank.md` | Per-consultant STAR+R stories |
 | `interview-prep/{company}-{role}.md` | Company-specific interview intel reports |
 | `analyze-patterns.mjs` | Pattern analysis script (JSON output) |
 | `followup-cadence.mjs` | Follow-up cadence calculator (JSON output) |
@@ -64,7 +48,7 @@ AI-powered job search automation built on Claude Code: pipeline tracking, offer 
 | `scan.mjs` | Zero-token portal scanner — hits Greenhouse/Ashby/Lever APIs directly, zero LLM cost |
 | `check-liveness.mjs` | Job posting liveness checker |
 | `liveness-core.mjs` | Shared liveness logic (expired signals win over generic Apply text) |
-| `reports/` | Evaluation reports (format: `{###}-{company-slug}-{YYYY-MM-DD}.md`). Blocks A-F + G (Posting Legitimacy). Header includes `**Legitimacy:** {tier}`. |
+| `reports/` | Evaluation reports (format: `{###}-{company-slug}-{YYYY-MM-DD}.md`). Shortlist table + shared blocks (A/D/G) + per-consultant blocks (B/C/E/F). Header includes `**Legitimacy:** {tier}` and `**Shortlist:** {slug1}, {slug2}`. |
 
 ### OpenCode Commands
 
@@ -94,41 +78,56 @@ When using [OpenCode](https://opencode.ai), the following slash commands are ava
 
 **Before doing ANYTHING else, check if the system is set up.** Run these checks silently every time a session starts:
 
-1. Does `cv.md` exist?
-2. Does `config/profile.yml` exist (not just profile.example.yml)?
-3. Does `modes/_profile.md` exist (not just _profile.template.md)?
-4. Does `portals.yml` exist (not just templates/portals.example.yml)?
+1. Does `config/firm.yml` exist (not just firm.example.yml)?
+2. Does `consultants/` exist with at least one `*/profile.yml`?
+3. Does each consultant in `consultants/*/` have a `cv.md`?
+4. Does `modes/_profile.md` exist (not just _profile.template.md)?
+5. Does `portals.yml` exist (not just templates/portals.example.yml)?
 
-If `modes/_profile.md` is missing, copy from `modes/_profile.template.md` silently. This is the user's customization file — it will never be overwritten by updates.
+If `modes/_profile.md` is missing, copy from `modes/_profile.template.md` silently.
 
-**If ANY of these is missing, enter onboarding mode.** Do NOT proceed with evaluations, scans, or any other mode until the basics are in place. Guide the user step by step:
+**If ANY of 1-3 is missing, enter onboarding mode.** Do NOT proceed with evaluations, scans, or any other mode until the basics are in place. Guide the user step by step:
 
-#### Step 1: CV (required)
-If `cv.md` is missing, ask:
-> "I don't have your CV yet. You can either:
-> 1. Paste your CV here and I'll convert it to markdown
-> 2. Paste your LinkedIn URL and I'll extract the key info
-> 3. Tell me about your experience and I'll draft a CV for you
+#### Step 0: Migration check
+If `cv.md` exists at project root AND `config/profile.yml` exists (old single-candidate layout):
+> "I see you have an existing single-candidate setup. Want me to migrate it to consultancy mode? This will:
+> - Move your CV and profile into a consultant directory
+> - Create a firm config with shortlist settings
+> - Preserve all your existing data
 >
-> Which do you prefer?"
+> Run: `node migrate-to-consultancy.mjs --dry-run` to preview, or `node migrate-to-consultancy.mjs` to migrate."
 
-Create `cv.md` from whatever they provide. Make it clean markdown with standard sections (Summary, Experience, Projects, Education, Skills).
+If they accept, run the migration script. After it completes, continue with Step 5 (get to know consultants).
 
-#### Step 2: Profile (required)
-If `config/profile.yml` is missing, copy from `config/profile.example.yml` and then ask:
-> "I need a few details to personalize the system:
-> - Your full name and email
-> - Your location and timezone
-> - What roles are you targeting? (e.g., 'Senior Backend Engineer', 'AI Product Manager')
-> - Your salary target range
+#### Step 1: Firm identity (required)
+If `config/firm.yml` is missing, copy from `config/firm.example.yml` and then ask:
+> "Let's set up your consultancy. I need:
+> - Your firm name
+> - Contact email
+> - Website (optional)
+> - Default language for reports (en/de/fr/ja)
 >
-> I'll set everything up for you."
+> I'll also set up the shortlist policy (default: recommend top scorer + anyone above 4.0/5)."
 
-Fill in `config/profile.yml` with their answers. For archetypes and targeting narrative, store the user-specific mapping in `modes/_profile.md` or `config/profile.yml` rather than editing `modes/_shared.md`.
+Fill in `config/firm.yml` with their answers.
+
+#### Step 2: Consultants (required)
+Ask:
+> "How many consultants do you want to set up? For each one I'll need:
+> 1. Their name (used to create a directory, e.g., 'alice' or 'jane-doe')
+> 2. Their CV (paste it, share a LinkedIn URL, or describe their experience)
+> 3. Target roles and archetypes
+> 4. Salary range and location"
+
+For each consultant:
+- Create `consultants/{slug}/cv.md` from whatever they provide. Clean markdown with standard sections.
+- Create `consultants/{slug}/profile.yml` by copying from `config/profile.example.yml` and filling in personal fields.
+- Create `consultants/{slug}/story-bank.md` (empty, with header).
+- Optionally create `consultants/{slug}/_profile.md` if they share specific framing/overrides.
 
 #### Step 3: Portals (recommended)
 If `portals.yml` is missing:
-> "I'll set up the job scanner with 45+ pre-configured companies. Want me to customize the search keywords for your target roles?"
+> "I'll set up the job scanner with 45+ pre-configured companies. Want me to customize the search keywords for your consultants' target roles?"
 
 Copy `templates/portals.example.yml` → `portals.yml`. If they gave target roles in Step 2, update `title_filter.positive` to match.
 
@@ -137,37 +136,35 @@ If `data/applications.md` doesn't exist, create it:
 ```markdown
 # Applications Tracker
 
-| # | Date | Company | Role | Score | Status | PDF | Report | Notes |
-|---|------|---------|------|-------|--------|-----|--------|-------|
+| # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes |
+|---|------|---------|------|-----------|-------|--------|-----|--------|-------|
 ```
 
-#### Step 5: Get to know the user (important for quality)
+#### Step 5: Get to know the consultants (important for quality)
 
-After the basics are set up, proactively ask for more context. The more you know, the better your evaluations will be:
+After the basics are set up, proactively ask for more context about each consultant:
 
-> "The basics are ready. But the system works much better when it knows you well. Can you tell me more about:
-> - What makes you unique? What's your 'superpower' that other candidates don't have?
-> - What kind of work excites you? What drains you?
-> - Any deal-breakers? (e.g., no on-site, no startups under 20 people, no Java shops)
-> - Your best professional achievement — the one you'd lead with in an interview
-> - Any projects, articles, or case studies you've published?
+> "The basics are ready. But the system works much better when it knows your consultants well. For each person, can you tell me:
+> - What makes them unique? What's their 'superpower'?
+> - What kind of work excites them? What should we avoid?
+> - Any deal-breakers? (e.g., no on-site, no startups under 20 people)
+> - Their best professional achievement
+> - Any projects, articles, or case studies they've published?
 >
-> The more context you give me, the better I filter. Think of it as onboarding a recruiter — the first week I need to learn about you, then I become invaluable."
+> The more context you give me per consultant, the better I match them to roles."
 
-Store any insights the user shares in `config/profile.yml` (under narrative), `modes/_profile.md`, or in `article-digest.md` if they share proof points. Do not put user-specific archetypes or framing into `modes/_shared.md`.
+Store insights in the relevant consultant's `profile.yml` (under narrative), `consultants/{slug}/_profile.md`, or `consultants/{slug}/article-digest.md`.
 
-**After every evaluation, learn.** If the user says "this score is too high, I wouldn't apply here" or "you missed that I have experience in X", update your understanding in `modes/_profile.md`, `config/profile.yml`, or `article-digest.md`. The system should get smarter with every interaction without putting personalization into system-layer files.
+**After every evaluation, learn.** If the user says "this score is too high for alice" or "you missed that bob has experience in X", update the relevant consultant's files. The system should get smarter with every interaction.
 
 #### Step 6: Ready
 Once all files exist, confirm:
 > "You're all set! You can now:
-> - Paste a job URL to evaluate it
+> - Paste a job URL to evaluate it against your roster
 > - Run `/career-ops scan` (or `/career-ops-scan` if using OpenCode) to search portals
 > - Run `/career-ops` to see all commands
 >
-> Everything is customizable — just ask me to change anything.
->
-> Tip: Having a personal portfolio dramatically improves your job search. If you don't have one yet, the author's portfolio is also open source: github.com/santifer/cv-santiago — feel free to fork it and make it yours."
+> Everything is customizable — just ask me to change anything."
 
 Then suggest automation:
 > "Want me to scan for new offers automatically? I can set up a recurring scan every few days so you don't miss anything. Just say 'scan every 3 days' and I'll configure it."
@@ -179,12 +176,14 @@ If the user accepts, use the `/loop` or `/schedule` skill (if available) to set 
 This system is designed to be customized by YOU (AI Agent). When the user asks you to change archetypes, translate modes, adjust scoring, add companies, or modify negotiation scripts -- do it directly. You read the same files you use, so you know exactly what to edit.
 
 **Common customization requests:**
-- "Change the archetypes to [backend/frontend/data/devops] roles" → edit `modes/_profile.md` or `config/profile.yml`
+- "Change the archetypes for [consultant]" → edit `consultants/{slug}/_profile.md` or `consultants/{slug}/profile.yml`
 - "Translate the modes to English" → edit all files in `modes/`
 - "Add these companies to my portals" → edit `portals.yml`
-- "Update my profile" → edit `config/profile.yml`
+- "Update [consultant]'s profile" → edit `consultants/{slug}/profile.yml`
+- "Update firm settings" → edit `config/firm.yml`
 - "Change the CV template design" → edit `templates/cv-template.html`
-- "Adjust the scoring weights" → edit `modes/_profile.md` for user-specific weighting, or edit `modes/_shared.md` and `batch/batch-prompt.md` only when changing the shared system defaults for everyone
+- "Adjust the scoring weights" → edit `modes/_profile.md` for firm-level, or `modes/_shared.md` for system defaults
+- "Change the shortlist threshold" → edit `config/firm.yml` (`shortlist.threshold`)
 
 ### Language Modes
 
@@ -196,17 +195,17 @@ Default modes are in `modes/` (English). Additional language-specific modes are 
 
 **When to use German modes:** If the user is targeting German-language job postings, lives in DACH, or asks for German output. Either:
 1. User says "use German modes" → read from `modes/de/` instead of `modes/`
-2. User sets `language.modes_dir: modes/de` in `config/profile.yml` → always use German modes
+2. User sets `language.modes_dir: modes/de` in `config/firm.yml` → always use German modes
 3. You detect a German JD → suggest switching to German modes
 
 **When to use French modes:** If the user is targeting French-language job postings, lives in France/Belgium/Switzerland/Luxembourg/Quebec, or asks for French output. Either:
 1. User says "use French modes" → read from `modes/fr/` instead of `modes/`
-2. User sets `language.modes_dir: modes/fr` in `config/profile.yml` → always use French modes
+2. User sets `language.modes_dir: modes/fr` in `config/firm.yml` → always use French modes
 3. You detect a French JD → suggest switching to French modes
 
 **When to use Japanese modes:** If the user is targeting Japanese-language job postings, lives in Japan, or asks for Japanese output. Either:
 1. User says "use Japanese modes" → read from `modes/ja/` instead of `modes/`
-2. User sets `language.modes_dir: modes/ja` in `config/profile.yml` → always use Japanese modes
+2. User sets `language.modes_dir: modes/ja` in `config/firm.yml` → always use Japanese modes
 3. You detect a Japanese JD → suggest switching to Japanese modes
 
 **When NOT to:** If the user applies to English-language roles, even at French, German, or Japanese companies, use the default English modes.
@@ -234,8 +233,9 @@ Default modes are in `modes/` (English). Additional language-specific modes are 
 
 ### CV Source of Truth
 
-- `cv.md` in project root is the canonical CV
-- `article-digest.md` has detailed proof points (optional)
+- `consultants/{slug}/cv.md` is each consultant's canonical CV
+- `consultants/{slug}/article-digest.md` has detailed proof points (optional)
+- `consultants/{slug}/story-bank.md` has accumulated STAR+R stories
 - **NEVER hardcode metrics** -- read them from these files at evaluation time
 
 ---
@@ -290,34 +290,38 @@ Default modes are in `modes/` (English). Additional language-specific modes are 
 
 ### TSV Format for Tracker Additions
 
-Write one TSV file per evaluation to `batch/tracker-additions/{num}-{company-slug}.tsv`. Single line, 9 tab-separated columns:
+Write one TSV file per shortlisted consultant to `batch/tracker-additions/{num}-{candidate-slug}.tsv`. Single line, 10 tab-separated columns:
 
 ```
-{num}\t{date}\t{company}\t{role}\t{status}\t{score}/5\t{pdf_emoji}\t[{num}](reports/{num}-{slug}-{date}.md)\t{note}
+{num}\t{date}\t{company}\t{role}\t{candidate}\t{status}\t{score}/5\t{pdf_emoji}\t[{num}](reports/{num}-{slug}-{date}.md)\t{note}
 ```
 
 **Column order (IMPORTANT -- status BEFORE score):**
-1. `num` -- sequential number (integer)
+1. `num` -- report number (integer, same ### as report filename)
 2. `date` -- YYYY-MM-DD
 3. `company` -- short company name
 4. `role` -- job title
-5. `status` -- canonical status (e.g., `Evaluated`)
-6. `score` -- format `X.X/5` (e.g., `4.2/5`)
-7. `pdf` -- `✅` or `❌`
-8. `report` -- markdown link `[num](reports/...)`
-9. `notes` -- one-line summary
+5. `candidate` -- consultant slug (e.g., `alice`)
+6. `status` -- canonical status (e.g., `Evaluated`)
+7. `score` -- format `X.X/5` (e.g., `4.2/5`)
+8. `pdf` -- `✅` or `❌`
+9. `report` -- markdown link `[num](reports/...)`
+10. `notes` -- one-line summary
 
 **Note:** In applications.md, score comes BEFORE status. The merge script handles this column swap automatically.
+**File naming:** `{num}-{candidate-slug}.tsv` — e.g., report #047 with alice and bob shortlisted produces `047-alice.tsv` and `047-bob.tsv`.
 
 ### Pipeline Integrity
 
 1. **NEVER edit applications.md to ADD new entries** -- Write TSV in `batch/tracker-additions/` and `merge-tracker.mjs` handles the merge.
 2. **YES you can edit applications.md to UPDATE status/notes of existing entries.**
-3. All reports MUST include `**URL:**` in the header (between Score and PDF). Include `**Legitimacy:** {tier}` (see Block G in `modes/oferta.md`).
-4. All statuses MUST be canonical (see `templates/states.yml`).
-5. Health check: `node verify-pipeline.mjs`
-6. Normalize statuses: `node normalize-statuses.mjs`
-7. Dedup: `node dedup-tracker.mjs`
+3. **NEVER create new entries in applications.md if company+role+candidate already exists.** Update the existing entry.
+4. All reports MUST include `**URL:**` in the header. Include `**Legitimacy:** {tier}` and `**Shortlist:** {slug1}, {slug2}` (see Block G in `modes/oferta.md`).
+5. All statuses MUST be canonical (see `templates/states.yml`).
+6. **Dedup key:** `(normalizeCompany, roleMatch, candidateSlug)` — same role at same company can have multiple rows if for different consultants.
+7. Health check: `node verify-pipeline.mjs`
+8. Normalize statuses: `node normalize-statuses.mjs`
+9. Dedup: `node dedup-tracker.mjs`
 
 ### Canonical States (applications.md)
 

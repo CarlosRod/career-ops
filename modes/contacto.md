@@ -1,6 +1,17 @@
-# Modo: contacto -- LinkedIn Power Move
+# Mode: contacto — LinkedIn Power Move (Consultancy)
 
-1. **Identificar targets** via WebSearch:
+## Consultant Selection
+
+This mode requires a consultant slug to personalize the outreach message. If ambiguous:
+1. If the user says "reach out for alice at Acme" → use alice
+2. If a report exists for this company → use the top-scoring shortlisted consultant
+3. If unclear → ask: "Which consultant is reaching out?"
+
+All proof points, achievements, and signature come from `consultants/{slug}/cv.md` and `consultants/{slug}/profile.yml`.
+
+## Workflow
+
+1. **Identify targets** via WebSearch:
    - Hiring manager del equipo
    - Recruiter asignado
    - 2-3 peers del equipo (gente con rol similar)

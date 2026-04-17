@@ -62,32 +62,51 @@ async function checkPlaywright() {
   }
 }
 
-function checkCv() {
-  if (existsSync(join(projectRoot, 'cv.md'))) {
-    return { pass: true, label: 'cv.md found' };
+function checkFirmYml() {
+  if (existsSync(join(projectRoot, 'config', 'firm.yml'))) {
+    return { pass: true, label: 'config/firm.yml found' };
   }
   return {
     pass: false,
-    label: 'cv.md not found',
+    label: 'config/firm.yml not found',
     fix: [
-      'Create cv.md in the project root with your CV in markdown',
-      'See examples/ for reference CVs',
+      'Run: cp config/firm.example.yml config/firm.yml',
+      'Then edit it with your firm details',
     ],
   };
 }
 
-function checkProfile() {
-  if (existsSync(join(projectRoot, 'config', 'profile.yml'))) {
-    return { pass: true, label: 'config/profile.yml found' };
+function checkRoster() {
+  const consultantsDir = join(projectRoot, 'consultants');
+  if (!existsSync(consultantsDir)) {
+    return {
+      pass: false,
+      label: 'consultants/ directory not found',
+      fix: 'Run onboarding or node migrate-to-consultancy.mjs',
+    };
   }
-  return {
-    pass: false,
-    label: 'config/profile.yml not found',
-    fix: [
-      'Run: cp config/profile.example.yml config/profile.yml',
-      'Then edit it with your details',
-    ],
-  };
+
+  const slugs = [];
+  try {
+    const entries = readdirSync(consultantsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const slug = entry.name;
+      const hasProfile = existsSync(join(consultantsDir, slug, 'profile.yml'));
+      const hasCv = existsSync(join(consultantsDir, slug, 'cv.md'));
+      if (hasProfile && hasCv) slugs.push(slug);
+    }
+  } catch { /* ignore */ }
+
+  if (slugs.length === 0) {
+    return {
+      pass: false,
+      label: 'No consultants with cv.md + profile.yml found',
+      fix: 'Add at least one consultant: mkdir consultants/<slug> then add cv.md + profile.yml',
+    };
+  }
+
+  return { pass: true, label: `Roster: ${slugs.length} consultant(s) — ${slugs.join(', ')}` };
 }
 
 function checkPortals() {
@@ -157,8 +176,8 @@ async function main() {
     checkNodeVersion(),
     checkDependencies(),
     await checkPlaywright(),
-    checkCv(),
-    checkProfile(),
+    checkFirmYml(),
+    checkRoster(),
     checkPortals(),
     checkFonts(),
     checkAutoDir('data'),

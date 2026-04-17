@@ -1,40 +1,55 @@
-# Modo: auto-pipeline — Pipeline Completo Automático
+# Mode: auto-pipeline — Full Automatic Pipeline (Consultancy)
 
-Cuando el usuario pega un JD (texto o URL) sin sub-comando explícito, ejecutar TODO el pipeline en secuencia:
+When the user pastes a JD (text or URL) without an explicit sub-command, execute the FULL pipeline in sequence:
 
-## Paso 0 — Extraer JD
+## Step 0 — Fetch JD
 
-Si el input es una **URL** (no texto de JD pegado), seguir esta estrategia para extraer el contenido:
+If the input is a **URL** (not pasted JD text), follow this strategy to extract content:
 
-**Orden de prioridad:**
+**Priority order:**
 
-1. **Playwright (preferido):** La mayoría de portales de empleo (Lever, Ashby, Greenhouse, Workday) son SPAs. Usar `browser_navigate` + `browser_snapshot` para renderizar y leer el JD.
-2. **WebFetch (fallback):** Para páginas estáticas (ZipRecruiter, WeLoveProduct, company career pages).
-3. **WebSearch (último recurso):** Buscar título del rol + empresa en portales secundarios que indexan el JD en HTML estático.
+1. **Playwright (preferred):** Most job portals (Lever, Ashby, Greenhouse, Workday) are SPAs. Use `browser_navigate` + `browser_snapshot` to render and read the JD.
+2. **WebFetch (fallback):** For static pages (ZipRecruiter, WeLoveProduct, company career pages).
+3. **WebSearch (last resort):** Search role title + company on secondary portals that index the JD in static HTML.
 
-**Si ningún método funciona:** Pedir al candidato que pegue el JD manualmente o comparta un screenshot.
+**If no method works:** Ask the user to paste the JD manually or share a screenshot.
 
-**Si el input es texto de JD** (no URL): usar directamente, sin necesidad de fetch.
+**If the input is JD text** (not URL): use directly, no fetch needed.
 
-## Paso 1 — Evaluación A-G
-Ejecutar exactamente igual que el modo `oferta` (leer `modes/oferta.md` para todos los bloques A-F + Block G Posting Legitimacy).
+## Step 1 — Evaluation A-G (Roster)
 
-## Paso 2 — Guardar Report .md
-Guardar la evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` (ver formato en `modes/oferta.md`).
-Include Block G in the saved report. Add `**Legitimacy:** {tier}` to the report header.
+Execute the full roster evaluation flow from `modes/oferta.md`:
+1. Archetype detection (shared)
+2. Block A — Role summary (shared)
+3. Roster scoring loop — Mini Block B for each consultant
+4. Apply hybrid shortlist rule from `config/firm.yml`
+5. For each shortlisted consultant: full Block B, C, E, F
+6. Block D — Comp (shared)
+7. Block G — Legitimacy (shared)
 
-## Paso 3 — Generar PDF
-Ejecutar el pipeline completo de `pdf` (leer `modes/pdf.md`).
+## Step 2 — Save Report .md
 
-## Paso 4 — Draft Application Answers (solo si score >= 4.5)
+Save the evaluation to `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` (see format in `modes/oferta.md`).
+Include shortlist table, shared blocks, and per-consultant sections.
+Add `**Legitimacy:** {tier}` and `**Shortlist:** {slug1}, {slug2}` to the report header.
 
-Si el score final es >= 4.5, generar borrador de respuestas para el formulario de aplicación:
+## Step 3 — Generate PDFs (one per shortlisted consultant)
 
-1. **Extraer preguntas del formulario**: Usar Playwright para navegar al formulario y hacer snapshot. Si no se pueden extraer, usar las preguntas genéricas.
-2. **Generar respuestas** siguiendo el tono (ver abajo).
-3. **Guardar en el report** como sección `## H) Draft Application Answers`.
+For **each** shortlisted consultant (verdict = PITCH):
+1. Run the PDF pipeline from `modes/pdf.md` with `consultant_slug={slug}`
+2. Output: `output/cv-{slug}-{company-slug}-{date}.pdf`
 
-### Preguntas genéricas (usar si no se pueden extraer del formulario)
+Consultants with verdict SKIP get no PDF.
+
+## Step 4 — Draft Application Answers (only if top consultant score >= 4.5)
+
+If the top-scoring consultant has score >= 4.5, generate draft answers **for that consultant**:
+
+1. **Extract form questions**: Use Playwright to navigate to the form and snapshot. If not extractable, use generic questions.
+2. **Generate answers** using that consultant's CV, profile, and proof points.
+3. **Save in the report** as section `## H) Draft Application Answers ({slug})`.
+
+### Generic questions (if not extractable from form)
 
 - Why are you interested in this role?
 - Why do you want to work at [Company]?
@@ -42,27 +57,21 @@ Si el score final es >= 4.5, generar borrador de respuestas para el formulario d
 - What makes you a good fit for this position?
 - How did you hear about this role?
 
-### Tono para Form Answers
+### Tone for Form Answers
 
-**Posición: "I'm choosing you."** el candidato tiene opciones y está eligiendo esta empresa por razones concretas.
+**Position: "We're choosing you."** The firm has options and is choosing this company for concrete reasons.
 
-**Reglas de tono:**
-- **Confiado sin arrogancia**: "I've spent the past year building production AI agent systems — your role is where I want to apply that experience next"
-- **Selectivo sin soberbia**: "I've been intentional about finding a team where I can contribute meaningfully from day one"
-- **Específico y concreto**: Siempre referenciar algo REAL del JD o de la empresa, y algo REAL de la experiencia del candidato
-- **Directo, sin fluff**: 2-4 frases por respuesta. Sin "I'm passionate about..." ni "I would love the opportunity to..."
-- **El hook es la prueba, no la afirmación**: En vez de "I'm great at X", decir "I built X that does Y"
+**Tone rules:**
+- **Confident without arrogance**: "Our consultant has spent the past year building production AI agent systems — your role is where that experience applies next"
+- **Specific and concrete**: Always reference something REAL from the JD or the company, and something REAL from the consultant's experience
+- **Direct, no fluff**: 2-4 sentences per answer. No "passionate about..." or "would love the opportunity to..."
+- **The hook is the proof, not the claim**: Instead of "great at X", say "built X that does Y"
 
-**Framework por pregunta:**
-- **Why this role?** → "Your [specific thing] maps directly to [specific thing I built]."
-- **Why this company?** → Mencionar algo concreto sobre la empresa. "I've been using [product] for [time/purpose]."
-- **Relevant experience?** → Un proof point cuantificado. "Built [X] that [metric]. Sold the company in 2025."
-- **Good fit?** → "I sit at the intersection of [A] and [B], which is exactly where this role lives."
-- **How did you hear?** → Honesto: "Found through [portal/scan], evaluated against my criteria, and it scored highest."
+**Language**: Always in the language of the JD (EN default).
 
-**Idioma**: Siempre en el idioma del JD (EN default). Aplicar `/tech-translate`.
+## Step 5 — Update Tracker
 
-## Paso 5 — Actualizar Tracker
-Registrar en `data/applications.md` con todas las columnas incluyendo Report y PDF en ✅.
+For **each** shortlisted consultant, write a TSV to `batch/tracker-additions/{num}-{slug}.tsv` with PDF = ✅.
+Then run `node merge-tracker.mjs` to incorporate into `data/applications.md`.
 
-**Si algún paso falla**, continuar con los siguientes y marcar el paso fallido como pendiente en el tracker.
+**If any step fails**, continue with remaining steps and mark the failed step as pending in the tracker notes.

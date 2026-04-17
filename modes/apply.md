@@ -1,6 +1,15 @@
-# Modo: apply — Asistente de Aplicación en Vivo
+# Mode: apply — Live Application Assistant (Consultancy)
 
-Modo interactivo para cuando el candidato está rellenando un formulario de aplicación en Chrome. Lee lo que hay en pantalla, carga el contexto previo de la oferta, y genera respuestas personalizadas para cada pregunta del formulario.
+Interactive mode for when the user is filling out a job application form. Reads the screen, loads prior evaluation context, and generates personalized answers for each form question.
+
+## Consultant Selection
+
+If the user says "apply alice to Acme" → use that slug. Otherwise:
+1. Look up the company+role in `data/applications.md` — if only one consultant is shortlisted (PITCH), use that one.
+2. If multiple consultants are shortlisted → ask: "Which consultant are we applying with? Shortlisted: alice (4.6), bob (4.1)"
+3. Read the chosen consultant's profile and report sections for their specific Block E/F content.
+
+All form answers, proof points, and signatures come from `consultants/{slug}/profile.yml` and `consultants/{slug}/cv.md`.
 
 ## Requisitos
 

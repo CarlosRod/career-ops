@@ -2,9 +2,11 @@
 /**
  * dedup-tracker.mjs — Remove duplicate entries from applications.md
  *
- * Groups by normalized company + fuzzy role match.
+ * Groups by normalized company + fuzzy role match + candidate slug.
  * Keeps entry with highest score. If discarded entry had more advanced status,
  * preserves that status. Merges notes.
+ *
+ * 10-column format: # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes
  *
  * Run: node career-ops/dedup-tracker.mjs [--dry-run]
  */
@@ -12,6 +14,7 @@
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { normalizeCompany, normalizeRole, roleMatch, ROLE_STOPWORDS, LOCATION_STOPWORDS } from './lib/normalize.mjs';
 
 const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original)
@@ -49,52 +52,6 @@ const STATUS_RANK = {
   'oferta': 6,
 };
 
-function normalizeCompany(name) {
-  return name.toLowerCase()
-    .replace(/[()]/g, '')
-    .replace(/\s+/g, ' ')
-    .replace(/[^a-z0-9 ]/g, '')
-    .trim();
-}
-
-function normalizeRole(role) {
-  return role.toLowerCase()
-    .replace(/[()]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/[^a-z0-9 /]/g, '')
-    .trim();
-}
-
-const ROLE_STOPWORDS = new Set([
-  'senior', 'junior', 'lead', 'staff', 'principal', 'head', 'chief',
-  'manager', 'director', 'associate', 'intern', 'contractor',
-  'remote', 'hybrid', 'onsite',
-  'engineer', 'engineering',
-]);
-
-const LOCATION_STOPWORDS = new Set([
-  'tokyo', 'japan', 'london', 'berlin', 'paris', 'singapore',
-  'york', 'francisco', 'angeles', 'seattle', 'austin', 'boston',
-  'chicago', 'denver', 'toronto', 'amsterdam', 'dublin', 'sydney',
-  'remote', 'global', 'emea', 'apac', 'latam',
-]);
-
-function roleMatch(a, b) {
-  const filterStopwords = (words) =>
-    words.filter(w => !ROLE_STOPWORDS.has(w) && !LOCATION_STOPWORDS.has(w));
-
-  const wordsA = filterStopwords(normalizeRole(a).split(/\s+/).filter(w => w.length > 2));
-  const wordsB = filterStopwords(normalizeRole(b).split(/\s+/).filter(w => w.length > 2));
-
-  if (wordsA.length === 0 || wordsB.length === 0) return false;
-
-  const overlap = wordsA.filter(w => wordsB.some(wb => wb === w));
-  const smaller = Math.min(wordsA.length, wordsB.length);
-  const ratio = overlap.length / smaller;
-
-  return overlap.length >= 2 && ratio >= 0.6;
-}
-
 function parseScore(s) {
   const m = s.replace(/\*\*/g, '').match(/([\d.]+)/);
   return m ? parseFloat(m[1]) : 0;
@@ -102,7 +59,8 @@ function parseScore(s) {
 
 function parseAppLine(line) {
   const parts = line.split('|').map(s => s.trim());
-  if (parts.length < 9) return null;
+  // 10-col: | # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes |
+  if (parts.length < 10) return null;
   const num = parseInt(parts[1]);
   if (isNaN(num)) return null;
   return {
@@ -110,11 +68,12 @@ function parseAppLine(line) {
     date: parts[2],
     company: parts[3],
     role: parts[4],
-    score: parts[5],
-    status: parts[6],
-    pdf: parts[7],
-    report: parts[8],
-    notes: parts[9] || '',
+    candidate: parts[5],
+    score: parts[6],
+    status: parts[7],
+    pdf: parts[8],
+    report: parts[9],
+    notes: parts[10] || '',
     raw: line,
   };
 }
@@ -142,10 +101,10 @@ for (let i = 0; i < lines.length; i++) {
 
 console.log(`📊 ${entries.length} entries loaded`);
 
-// Group by company+role
+// Group by company+candidate
 const groups = new Map();
 for (const entry of entries) {
-  const key = normalizeCompany(entry.company);
+  const key = normalizeCompany(entry.company) + '::' + (entry.candidate || '');
   if (!groups.has(key)) groups.set(key, []);
   groups.get(key).push(entry);
 }
@@ -154,20 +113,20 @@ for (const entry of entries) {
 let removed = 0;
 const linesToRemove = new Set();
 
-for (const [company, companyEntries] of groups) {
-  if (companyEntries.length < 2) continue;
+for (const [companyCandidate, groupEntries] of groups) {
+  if (groupEntries.length < 2) continue;
 
-  // Within same company, find role matches
+  // Within same company+candidate, find role matches
   const processed = new Set();
-  for (let i = 0; i < companyEntries.length; i++) {
+  for (let i = 0; i < groupEntries.length; i++) {
     if (processed.has(i)) continue;
-    const cluster = [companyEntries[i]];
+    const cluster = [groupEntries[i]];
     processed.add(i);
 
-    for (let j = i + 1; j < companyEntries.length; j++) {
+    for (let j = i + 1; j < groupEntries.length; j++) {
       if (processed.has(j)) continue;
-      if (roleMatch(companyEntries[i].role, companyEntries[j].role)) {
-        cluster.push(companyEntries[j]);
+      if (roleMatch(groupEntries[i].role, groupEntries[j].role)) {
+        cluster.push(groupEntries[j]);
         processed.add(j);
       }
     }
@@ -194,7 +153,7 @@ for (const [company, companyEntries] of groups) {
       const lineIdx = entryLineMap.get(keeper.num);
       if (lineIdx !== undefined) {
         const parts = lines[lineIdx].split('|').map(s => s.trim());
-        parts[6] = bestStatus;
+        parts[7] = bestStatus; // 10-col: status is at index 7 (after Candidate at 5, Score at 6)
         lines[lineIdx] = '| ' + parts.slice(1, -1).join(' | ') + ' |';
         console.log(`  📝 #${keeper.num}: status promoted to "${bestStatus}" (from #${cluster.find(e => e.status === bestStatus)?.num})`);
       }

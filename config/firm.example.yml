@@ -1,0 +1,18 @@
+# Career-Ops Firm Configuration
+# Copy this file to config/firm.yml and fill in your details.
+# This is the firm-level config for consultancy mode.
+
+firm:
+  name: "Acme Consulting"          # firm display name (used in reports, outreach)
+  contact_email: "hiring@acme.io"  # optional: firm contact for pitches
+  website: "https://acme.io"       # optional: firm website
+  language: "en"                   # default output language (en/de/fr/ja)
+
+shortlist:
+  policy: "hybrid"                 # hybrid = top 1 always + others >= threshold
+  threshold: 4.0                   # minimum score for additional shortlist slots
+  # min_score: null                # optional floor: below this, even top-1 is SKIP
+
+compensation:
+  # floor: null                    # optional firm-wide walk-away number (e.g., "$80K")
+  currency: "USD"                  # default currency for comp comparisons

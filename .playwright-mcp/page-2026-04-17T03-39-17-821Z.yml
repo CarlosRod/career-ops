@@ -1,0 +1,354 @@
+- generic [active] [ref=e1]:
+  - region "cookie" [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - text: We use cookies to offer you a better browsing experience, analyze site traffic, and personalize content. Read about how we use cookies and how you can control them by visiting our
+        - link "Cookie Settings" [ref=e8] [cursor=pointer]:
+          - /url: https://careers.hubinternational.com/us/en/cookiesettings
+        - text: page.
+      - button "Allow" [ref=e10] [cursor=pointer]:
+        - generic [ref=e11]: Allow
+  - banner [ref=e12]:
+    - generic:
+      - link "Skip to main content":
+        - /url: "#skipToMainContent"
+    - generic [ref=e16]:
+      - link "Company Logo" [ref=e18] [cursor=pointer]:
+        - /url: https://careers.hubinternational.com/us/en/home
+        - img "Header_Brand" [ref=e19]
+      - navigation [ref=e26]:
+        - list [ref=e27]:
+          - listitem [ref=e28]:
+            - link "Careers Home" [ref=e30] [cursor=pointer]:
+              - /url: https://careers.hubinternational.com/us/en/home
+          - listitem [ref=e31]:
+            - button "Working at HUB" [ref=e32] [cursor=pointer]:
+              - generic [ref=e33]: Working at HUB
+              - img [ref=e35]
+          - listitem [ref=e37]:
+            - button "Career Areas" [ref=e38] [cursor=pointer]:
+              - generic [ref=e39]: Career Areas
+              - img [ref=e41]
+          - listitem [ref=e43]:
+            - link "Canada" [ref=e45] [cursor=pointer]:
+              - /url: https://careers.hubinternational.com/us/en/canada
+          - listitem [ref=e46]:
+            - link "Join Our Talent Community" [ref=e48] [cursor=pointer]:
+              - /url: https://careers.hubinternational.com/us/en/jointalentcommunity
+          - listitem [ref=e49]:
+            - link "Returning Candidates" [ref=e51] [cursor=pointer]:
+              - /url: https://hubinternational.wd1.myworkdayjobs.com/HUBInternational/login
+      - list [ref=e53]:
+        - listitem [ref=e54]:
+          - button "Language selected English English" [ref=e58] [cursor=pointer]:
+            - img [ref=e60]
+            - generic [ref=e62]: English
+            - generic:
+              - img
+        - listitem [ref=e63]:
+          - link "0 saved jobs" [ref=e66] [cursor=pointer]:
+            - /url: https://careers.hubinternational.com/us/en/jobcart
+            - img [ref=e68]
+            - generic [ref=e70]: Saved jobs
+            - generic [ref=e71]: (0)
+  - main [ref=e72]:
+    - generic [ref=e75]: "-"
+    - generic [ref=e76]:
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - heading "AI Program Manager" [level=1] [ref=e82]
+          - generic [ref=e84]:
+            - generic [ref=e86]:
+              - img [ref=e88]
+              - generic [ref=e90]:
+                - generic [ref=e91]: "Location:"
+                - text: Chicago, Illinois, United States of America
+            - generic [ref=e93]:
+              - img [ref=e95]
+              - generic [ref=e97]:
+                - generic [ref=e98]: "Category:"
+                - text: Information Technology
+            - generic [ref=e100]:
+              - img [ref=e102]
+              - generic [ref=e104]:
+                - generic [ref=e105]: "Job ID:"
+                - text: R0034942
+            - generic [ref=e107]:
+              - img [ref=e109]
+              - generic [ref=e111]:
+                - generic [ref=e112]: "widget:"
+                - text: Full time
+            - generic [ref=e114]:
+              - img [ref=e116]
+              - generic [ref=e118]:
+                - generic [ref=e119]: "Remote:"
+                - text: Hybrid
+        - generic [ref=e122]:
+          - link "Apply Now AI Program Manager" [ref=e124] [cursor=pointer]:
+            - /url: https://careers.hubinternational.com/us/en/apply?jobSeqNo=HULHICUSR0034942EXTERNALENUS
+            - text: Apply Now
+          - button "Save job AI Program Manager to job cart" [ref=e126] [cursor=pointer]:
+            - img [ref=e128]
+            - generic [ref=e130]: Save
+      - generic [ref=e132]:
+        - generic [ref=e133]:
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - heading "Description" [level=2] [ref=e138]
+              - generic [ref=e139]:
+                - paragraph [ref=e140]: ABOUT US
+                - paragraph [ref=e141]: At HUB International, we are a team of entrepreneurs. We believe in protecting and supporting the aspirations of individuals, families, and businesses. We help our clients evaluate their risks and develop solutions tailored to their needs. We believe in empowering our employees to learn, grow, and make a difference. Our structure enables our teams to maintain their own unique, regional culture while leveraging support and resources from our corporate centers of excellence.
+                - paragraph
+                - paragraph [ref=e142]: HUB is a global insurance and employee benefits broker, providing a boundaryless array of business insurance, employee benefits, risk services, personal insurance, retirement, and private wealth management products and services. With over $5 billion in revenue and almost 20,000 employees in 600 offices throughout North America, HUB has grown substantially, in part due to our industry leading success in mergers and acquisitions
+                - paragraph
+                - paragraph [ref=e143]: Program Manager
+                - paragraph [ref=e144]: Technology & Operations PMO | HUB International
+                - paragraph
+                - heading "About the Role" [level=1] [ref=e145]
+                - paragraph [ref=e146]: HUB International’s Technology & Operations PMO is looking for a dynamic Program Manager to join our growing team and drive high-impact delivery across TechOps. Your first assignment will be leading our AI initiative portfolio and supporting the organizational build-out of emerging AI capabilities — a high-visibility, high-impact area where you will partner with business leaders, technology teams, and governance bodies to deliver scalable, secure, and transformative solutions while helping stand up the structures, processes, and governance models that make it sustainable.
+                - paragraph
+                - paragraph [ref=e147]: As a member of the PMO, you will be assigned to programs based on portfolio need over time. In each assignment, you’ll work directly with product owners and technology leaders who define the roadmap and vision, then take ownership of translating that into structured plans, coordinated delivery, and disciplined execution. Your success is measured by your ability to cut through complexity, keep programs moving, and bring the right people together at the right time.
+                - paragraph
+                - heading "What You’ll Do" [level=1] [ref=e148]
+                - heading "Program Execution" [level=2] [ref=e149]
+                - list [ref=e150]:
+                  - listitem [ref=e151]: Partner with product owners to intake initiative roadmaps and translate them into actionable program plans with clear milestones, dependencies, and resource needs
+                  - listitem [ref=e152]: Drive day-to-day execution across active programs, proactively identifying and removing blockers, managing interdependencies, and keeping delivery on track
+                  - listitem [ref=e153]: Coordinate across technology teams, vendors, and stakeholders to align on sequencing, capacity, and delivery commitments
+                  - listitem [ref=e154]: Maintain program-level visibility through consistent status reporting, risk tracking, and issue escalation — ensuring leadership has an accurate, timely picture of progress
+                  - listitem [ref=e155]: Support pilot and rollout activities by coordinating readiness across technology, change management, and operations teams
+                - paragraph
+                - heading "What You Bring" [level=1] [ref=e156]
+                - heading "Experience & Background" [level=2] [ref=e157]
+                - list [ref=e158]:
+                  - listitem [ref=e159]: 5+ years of program management experience, with a strong track record of driving delivery in complex, matrixed technology organizations
+                  - listitem [ref=e160]: Experience executing AI, automation, or emerging technology programs — coordinating across technical teams, vendors, and stakeholders through delivery
+                  - listitem [ref=e161]: Demonstrated ability to manage across program types — while your first assignment will focus on AI, comfort picking up new program domains quickly is essential
+                  - listitem [ref=e162]: Background supporting organizational launches or capability stand-ups, managing the execution side of structural transitions
+                  - listitem [ref=e163]: Familiarity with AI governance principles or responsible AI frameworks
+                  - listitem [ref=e164]: Exposure to enterprise technology environments (infrastructure, enterprise applications, security, or similar)
+                - paragraph
+                - heading "Skills & Competencies" [level=2] [ref=e165]
+                - list [ref=e166]:
+                  - listitem [ref=e167]: Exceptional execution discipline — you follow through, close loops, and don’t let things fall through the cracks
+                  - listitem [ref=e168]: Strong ability to translate strategic direction into structured plans, timelines, and delivery cadences
+                  - listitem [ref=e169]: Skilled at navigating ambiguity and managing competing priorities without losing momentum
+                  - listitem [ref=e170]: Clear, confident communicator who can adapt messaging for technical teams, change leads, and executive stakeholders
+                - paragraph
+                - heading "Nice to Have" [level=2] [ref=e171]
+                - list [ref=e172]:
+                  - listitem [ref=e173]: PMP, PgMP, or equivalent program management certification
+                  - listitem [ref=e174]: Exposure to change management methodologies (Prosci, ADKAR)
+                  - listitem [ref=e175]: Experience in insurance, financial services, or other regulated industries
+                - paragraph
+                - paragraph [ref=e176]: JOIN OUR TEAM
+                - paragraph [ref=e177]: "Do you believe in the power of innovation, collaboration, and transformation? Do you thrive in a supportive and client focused work environment? Are you looking for an opportunity to help build and drive change in a rapidly growing and evolving organization? When you join HUB International, you will be part of a community of learners and doers focused on our Core Values: entrepreneurship, teamwork, integrity, accountability, and service."
+                - paragraph
+                - paragraph [ref=e178]: "Disclosure required under applicable law in California, Colorado, Illinois, Maryland, Minnesota, New York, New Jersey, and Washington states: The expected salary range for this position is $ 140,000 to $160,000 and will be impacted by factors such as the successful candidate’s skills, experience and working location, as well as the specific position’s business line, scope and level. If you believe that your qualifications and experience surpass the minimum requirements for this role, we encourage you to submit your application. By doing so, we will be able to keep your application on file for consideration for potential future positions within our organization. HUB International is proud to offer comprehensive benefit and total compensation packages which could include health/dental/vision/life/disability insurance, FSA, HSA and 401(k) accounts, paid-time-off benefits such as vacation, sick, and personal days, and eligible bonuses, equity and commissions for some positions."
+                - paragraph
+                - paragraph
+                - text: Department Information Technology
+                - paragraph
+                - paragraph
+                - text: "Required Experience: 7-10 years of relevant experience"
+                - paragraph
+                - paragraph
+                - paragraph
+                - text: "Required Travel: Negligible"
+                - paragraph
+                - paragraph
+                - text: "Required Education: Bachelor's degree (4-year degree)"
+                - paragraph
+                - paragraph
+                - paragraph [ref=e179]: HUB International Limited is an equal opportunity employer that does not discriminate on the basis of race/ethnicity, national origin, religion, age, color, sex, sexual orientation, gender identity, disability or veteran's status, or any other characteristic protected by local, state or federal laws, rules or regulations.
+                - paragraph
+                - paragraph [ref=e180]:
+                  - link "E-Verify Program" [ref=e181] [cursor=pointer]:
+                    - /url: https://hubinternational.jobs/e-verify/
+                - paragraph
+                - paragraph [ref=e182]:
+                  - text: We endeavor to make this website accessible to any and all users. If you would like to contact us regarding the accessibility of our website or need assistance completing the application process, please contact the recruiting team
+                  - link "HUBRecruiting@hubinternational.com" [ref=e183] [cursor=pointer]:
+                    - /url: mailto:HUBRecruiting@hubinternational.com
+                  - text: . This contact information is for accommodation requests only; do not use this contact information to inquire about the status of applications.
+            - generic [ref=e186]:
+              - button "Apply Now AI Program Manager" [ref=e188] [cursor=pointer]: Apply now
+              - button "Save job AI Program Manager to job cart" [ref=e190] [cursor=pointer]:
+                - img [ref=e192]
+                - generic [ref=e194]: Save
+          - button "show location map" [ref=e198] [cursor=pointer]:
+            - text: Show map
+            - img [ref=e200]
+        - generic [ref=e202]:
+          - region "Get notified for similar jobs" [ref=e208]:
+            - heading "Get notified for similar jobs" [level=2] [ref=e209]
+            - generic [ref=e210]: Sign up to receive job alerts
+            - generic [ref=e211]: Email address
+            - generic [ref=e212]:
+              - textbox "Email address" [ref=e217]:
+                - /placeholder: name@email.com
+              - generic [ref=e218]:
+                - generic [ref=e220]:
+                  - checkbox [ref=e221]
+                  - generic [ref=e223]:
+                    - generic [ref=e224]:
+                      - text: EOE including Disability/Protected Veterans We endeavor to make this website accessible to any and all users. If you would like to contact us regarding the accessibility of our website or need assistance completing the application process, please contact the Recruiting Team at HUBRecruiting@hubinternational.com . This contact information is for accommodation requests only; do not use this contact information to inquire about the status of applications.
+                      - text: © 2024 HUB International Limited. All rights reserved.
+                      - link "Privacy Policy" [ref=e225] [cursor=pointer]:
+                        - /url: https://www.hubinternational.com/about-us/privacy-policy/
+                      - text: "&"
+                      - link "Terms Conditions" [ref=e226] [cursor=pointer]:
+                        - /url: https://www.hubinternational.com/about-us/terms-and-conditions/
+                      - link "BCBSIL Machine Readable Files" [ref=e227] [cursor=pointer]:
+                        - /url: https://www.bcbsil.com/asomrf?EIN=753243028"
+                      - text: If you feel you have received communications from someone impersonating a Hub International Recruiter or find a job posting that cannot be verified by our career site, please email us to report this instance HUBRecruiting@hubinternational.com. Please be aware that we will never ask for payment or send a payment as a part of the recruitment or onboarding process.
+                    - text: "*"
+                - alert
+              - button "Submit" [ref=e228] [cursor=pointer]
+            - button "Manage Alerts" [ref=e230] [cursor=pointer]
+          - generic [ref=e239]:
+            - heading "Get tailored job recommendations based on your interests." [level=2] [ref=e241]
+            - button "Get started for profile recommendations" [ref=e243] [cursor=pointer]: Get Started
+          - generic [ref=e247]:
+            - heading "Share the opportunity" [level=2] [ref=e249]
+            - list [ref=e250]:
+              - listitem [ref=e251]:
+                - button "Share via Facebook" [ref=e252] [cursor=pointer]:
+                  - img [ref=e254]
+                  - generic [ref=e256]: Share via Facebook
+              - listitem [ref=e257]:
+                - button "Share via twitter" [ref=e258] [cursor=pointer]:
+                  - img [ref=e260]
+                  - generic [ref=e262]: Share via twitter
+              - listitem [ref=e263]:
+                - button "Share via linkedin" [ref=e264] [cursor=pointer]:
+                  - img [ref=e266]
+                  - generic [ref=e268]: Share via linkedin
+  - contentinfo [ref=e269]:
+    - generic [ref=e271]:
+      - list [ref=e274]:
+        - listitem [ref=e275]:
+          - link "Personal Information" [ref=e276] [cursor=pointer]:
+            - /url: https://careers.hubinternational.com/us/en/emailpersonalinfo
+        - listitem [ref=e277]:
+          - link "Career Site Cookie Settings" [ref=e278] [cursor=pointer]:
+            - /url: https://careers.hubinternational.com/us/en/cookiesettings
+      - generic [ref=e281]:
+        - link "Footer" [ref=e283] [cursor=pointer]:
+          - /url: /
+          - img "Footer" [ref=e284]
+        - navigation [ref=e290]:
+          - list [ref=e291]:
+            - listitem [ref=e292]:
+              - heading [level=2]
+              - list [ref=e294]:
+                - listitem [ref=e295]:
+                  - link "Explore Office Locations" [ref=e297] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/offices/
+                - listitem [ref=e298]:
+                  - link "Blog" [ref=e300] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/blog/
+                - listitem [ref=e301]:
+                  - link "Products" [ref=e303] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/business-insurance-products/
+                - listitem [ref=e304]:
+                  - link "Industries" [ref=e306] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/industries/
+                - listitem [ref=e307]:
+                  - link "Programs & Associations" [ref=e309] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/programs-associations/
+            - listitem [ref=e310]:
+              - heading [level=2]
+              - list [ref=e312]:
+                - listitem [ref=e313]:
+                  - link "About HUB" [ref=e315] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/about-us/
+                - listitem [ref=e316]:
+                  - link "Management" [ref=e318] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/about-us/meet-the-team/
+                - listitem [ref=e319]:
+                  - link "Caring and Giving" [ref=e321] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/about-us/caring-and-giving/
+                - listitem [ref=e322]:
+                  - link "Mergers & Acquisitions" [ref=e324] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/about-us/mergers-acquisitions/
+                - listitem [ref=e325]:
+                  - link "Press Releases" [ref=e327] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/press-releases/
+                - listitem [ref=e328]:
+                  - link "Careers" [ref=e330] [cursor=pointer]:
+                    - /url: https://hubinternational.jobs/
+                - listitem [ref=e331]:
+                  - link "Wholesale" [ref=e333] [cursor=pointer]:
+                    - /url: https://www.hubinternational.com/about-us/hub-wholesale/
+        - generic [ref=e334]:
+          - heading "follow us" [level=2] [ref=e335]
+          - list [ref=e336]:
+            - listitem [ref=e337]:
+              - link "facebook" [ref=e338] [cursor=pointer]:
+                - /url: https://www.facebook.com/HUBInternationalLimited
+                - img [ref=e340]
+            - listitem [ref=e342]:
+              - link "linkedIn" [ref=e343] [cursor=pointer]:
+                - /url: https://www.linkedin.com/company/hub-international
+                - img [ref=e345]
+            - listitem [ref=e347]:
+              - link "twitter" [ref=e348] [cursor=pointer]:
+                - /url: https://twitter.com/HUBInsurance
+                - img [ref=e350]
+            - listitem [ref=e352]:
+              - link "instagram" [ref=e353] [cursor=pointer]:
+                - /url: https://www.instagram.com/hub_intl/?hl=en
+                - img [ref=e355]
+      - generic [ref=e359]:
+        - generic [ref=e360]:
+          - text: ©2024 HUB International Limited.
+          - text: 150 N Riverside Plaza, 17th Floor, Chicago, IL 60606. All rights reserved.
+        - list [ref=e364]:
+          - listitem [ref=e365]:
+            - link "Privacy Policy" [ref=e367] [cursor=pointer]:
+              - /url: https://www.hubinternational.com/about-us/privacy-policy/
+          - listitem [ref=e368]:
+            - link "Terms & Conditions" [ref=e370] [cursor=pointer]:
+              - /url: https://www.hubinternational.com/about-us/terms-and-conditions
+          - listitem [ref=e371]:
+            - link "BCBSIL Machine Readable Files" [ref=e373] [cursor=pointer]:
+              - /url: https://www.bcbsil.com/asomrf
+  - generic [ref=e374]:
+    - generic [ref=e376]: How would you rate your experience popup
+    - generic [ref=e377]:
+      - button "Close how would you rate your experience popup" [ref=e378] [cursor=pointer]:
+        - img [ref=e380]
+      - generic [ref=e383]:
+        - heading "How would you rate your experience?" [level=2] [ref=e384]
+        - group "How would you rate your experience?" [ref=e387]:
+          - generic [ref=e388]: How would you rate your experience?
+          - generic [ref=e389]:
+            - radio "No rating" [ref=e390]
+            - generic [ref=e391] [cursor=pointer]: No rating
+            - radio "1 star" [ref=e392]
+            - generic [ref=e393] [cursor=pointer]:
+              - generic [ref=e394]: 1 star
+              - img [ref=e396]
+            - radio "2 star" [ref=e398]
+            - generic [ref=e399] [cursor=pointer]:
+              - generic [ref=e400]: 2 star
+              - img [ref=e402]
+            - radio "3 star" [ref=e404]
+            - generic [ref=e405] [cursor=pointer]:
+              - generic [ref=e406]: 3 star
+              - img [ref=e408]
+            - radio "4 star" [ref=e410]
+            - generic [ref=e411] [cursor=pointer]:
+              - generic [ref=e412]: 4 star
+              - img [ref=e414]
+            - radio "5 star" [ref=e416]
+            - generic [ref=e417] [cursor=pointer]:
+              - generic [ref=e418]: 5 star
+              - img [ref=e420]
+        - button "Send Feedback" [disabled]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - complementary "Static Text"

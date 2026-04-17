@@ -1,25 +1,35 @@
-# Modo: pdf — Generación de PDF ATS-Optimizado
+# Mode: pdf — ATS-Optimized PDF Generation (Consultancy)
 
-## Pipeline completo
+## Consultant Selection
 
-1. Lee `cv.md` como fuentes de verdad
-2. Pide al usuario el JD si no está en contexto (texto o URL)
-3. Extrae 15-20 keywords del JD
-4. Detecta idioma del JD → idioma del CV (EN default)
-5. Detecta ubicación empresa → formato papel:
+This mode requires a `consultant_slug` to know whose CV to generate. If called from `auto-pipeline`, the slug comes from the shortlist. If called standalone:
+
+1. If the user specifies a consultant (e.g., "generate PDF for alice") → use that slug
+2. If only one consultant exists in `consultants/` → use that one
+3. If ambiguous → ask: "Which consultant? Available: alice, bob, carol"
+
+## Pipeline
+
+1. Read `consultants/{slug}/cv.md` as source of truth
+2. Read `consultants/{slug}/profile.yml` for name, contact, links
+3. Read `consultants/{slug}/article-digest.md` (if exists) for proof points
+4. Ask the user for the JD if not in context (text or URL)
+5. Extract 15-20 keywords from JD
+6. Detect JD language → CV language (EN default)
+7. Detect company location → paper format:
    - US/Canada → `letter`
-   - Resto del mundo → `a4`
-6. Detecta arquetipo del rol → adapta framing
-7. Reescribe Professional Summary inyectando keywords del JD + exit narrative bridge ("Built and sold a business. Now applying systems thinking to [domain del JD].")
-8. Selecciona top 3-4 proyectos más relevantes para la oferta
-9. Reordena bullets de experiencia por relevancia al JD
-10. Construye competency grid desde requisitos del JD (6-8 keyword phrases)
-11. Inyecta keywords naturalmente en logros existentes (NUNCA inventa)
-12. Genera HTML completo desde template + contenido personalizado
-13. Lee `name` de `config/profile.yml` → normaliza a kebab-case lowercase (e.g. "John Doe" → "john-doe") → `{candidate}`
-14. Escribe HTML a `/tmp/cv-{candidate}-{company}.html`
-15. Ejecuta: `node generate-pdf.mjs /tmp/cv-{candidate}-{company}.html output/cv-{candidate}-{company}-{YYYY-MM-DD}.pdf --format={letter|a4}`
-15. Reporta: ruta del PDF, nº páginas, % cobertura de keywords
+   - Rest of world → `a4`
+8. Detect role archetype → adapt framing
+9. Rewrite Professional Summary injecting JD keywords + consultant's exit narrative from their profile.yml
+10. Select top 3-4 most relevant projects for the role
+11. Reorder experience bullets by JD relevance
+12. Build competency grid from JD requirements (6-8 keyword phrases)
+13. Inject keywords naturally into existing achievements (NEVER invent)
+14. Generate full HTML from template + personalized content
+15. Read `candidate.full_name` from `consultants/{slug}/profile.yml` → normalize to kebab-case → `{candidate}`
+16. Write HTML to `/tmp/cv-{candidate}-{company}.html`
+17. Execute: `node generate-pdf.mjs /tmp/cv-{candidate}-{company}.html output/cv-{candidate}-{company}-{YYYY-MM-DD}.pdf --format={letter|a4}`
+18. Report: PDF path, page count, keyword coverage %
 
 ## Reglas ATS (parseo limpio)
 
@@ -69,13 +79,13 @@ Usar el template en `cv-template.html`. Reemplazar los placeholders `{{...}}` co
 |-------------|-----------|
 | `{{LANG}}` | `en` o `es` |
 | `{{PAGE_WIDTH}}` | `8.5in` (letter) o `210mm` (A4) |
-| `{{NAME}}` | (from profile.yml) |
-| `{{EMAIL}}` | (from profile.yml) |
-| `{{LINKEDIN_URL}}` | [from profile.yml] |
-| `{{LINKEDIN_DISPLAY}}` | [from profile.yml] |
-| `{{PORTFOLIO_URL}}` | [from profile.yml] (o /es según idioma) |
-| `{{PORTFOLIO_DISPLAY}}` | [from profile.yml] (o /es según idioma) |
-| `{{LOCATION}}` | [from profile.yml] |
+| `{{NAME}}` | (from consultant's profile.yml) |
+| `{{EMAIL}}` | (from consultant's profile.yml) |
+| `{{LINKEDIN_URL}}` | [from consultant's profile.yml] |
+| `{{LINKEDIN_DISPLAY}}` | [from consultant's profile.yml] |
+| `{{PORTFOLIO_URL}}` | [from consultant's profile.yml] (o /es según idioma) |
+| `{{PORTFOLIO_DISPLAY}}` | [from consultant's profile.yml] (o /es según idioma) |
+| `{{LOCATION}}` | [from consultant's profile.yml] |
 | `{{SECTION_SUMMARY}}` | Professional Summary / Resumen Profesional |
 | `{{SUMMARY_TEXT}}` | Summary personalizado con keywords |
 | `{{SECTION_COMPETENCIES}}` | Core Competencies / Competencias Core |
@@ -93,11 +103,11 @@ Usar el template en `cv-template.html`. Reemplazar los placeholders `{{...}}` co
 
 ## Canva CV Generation (optional)
 
-If `config/profile.yml` has `canva_resume_design_id` set, offer the user a choice before generating:
+If `consultants/{slug}/profile.yml` has `candidate.canva_resume_design_id` set, offer the user a choice before generating:
 - **"HTML/PDF (fast, ATS-optimized)"** — existing flow above
 - **"Canva CV (visual, design-preserving)"** — new flow below
 
-If the user has no `canva_resume_design_id`, skip this prompt and use the HTML/PDF flow.
+If the consultant has no `canva_resume_design_id`, skip this prompt and use the HTML/PDF flow.
 
 ### Canva workflow
 

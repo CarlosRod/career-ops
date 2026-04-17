@@ -17,6 +17,7 @@
 import { readFileSync, readdirSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { normalizeCompany } from './lib/normalize.mjs';
 
 const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
 // Support both layouts: data/applications.md (boilerplate) and applications.md (original)
@@ -69,13 +70,15 @@ const entries = [];
 for (const line of lines) {
   if (!line.startsWith('|')) continue;
   const parts = line.split('|').map(s => s.trim());
-  if (parts.length < 9) continue;
+  // 10-col: | # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes |
+  if (parts.length < 10) continue;
   const num = parseInt(parts[1]);
   if (isNaN(num)) continue;
   entries.push({
     num, date: parts[2], company: parts[3], role: parts[4],
-    score: parts[5], status: parts[6], pdf: parts[7], report: parts[8],
-    notes: parts[9] || '',
+    candidate: parts[5],
+    score: parts[6], status: parts[7], pdf: parts[8], report: parts[9],
+    notes: parts[10] || '',
   });
 }
 
@@ -107,22 +110,41 @@ for (const e of entries) {
 }
 if (badStatuses === 0) ok('All statuses are canonical');
 
-// --- Check 2: Duplicates ---
-const companyRoleMap = new Map();
+// --- Check 2: Duplicates (keyed by company + role + candidate) ---
+const companyRoleCandidateMap = new Map();
 let dupes = 0;
 for (const e of entries) {
-  const key = e.company.toLowerCase().replace(/[^a-z0-9]/g, '') + '::' +
-    e.role.toLowerCase().replace(/[^a-z0-9 ]/g, '');
-  if (!companyRoleMap.has(key)) companyRoleMap.set(key, []);
-  companyRoleMap.get(key).push(e);
+  const key = normalizeCompany(e.company) + '::' +
+    e.role.toLowerCase().replace(/[^a-z0-9 ]/g, '') + '::' +
+    (e.candidate || '');
+  if (!companyRoleCandidateMap.has(key)) companyRoleCandidateMap.set(key, []);
+  companyRoleCandidateMap.get(key).push(e);
 }
-for (const [key, group] of companyRoleMap) {
+for (const [key, group] of companyRoleCandidateMap) {
   if (group.length > 1) {
-    warn(`Possible duplicates: ${group.map(e => `#${e.num}`).join(', ')} (${group[0].company} — ${group[0].role})`);
+    warn(`Possible duplicates: ${group.map(e => `#${e.num}`).join(', ')} (${group[0].company} — ${group[0].role} [${group[0].candidate}])`);
     dupes++;
   }
 }
 if (dupes === 0) ok('No exact duplicates found');
+
+// --- Check 2b: Candidate slugs exist in roster ---
+const consultantsDir = join(CAREER_OPS, 'consultants');
+let unknownSlugs = 0;
+if (existsSync(consultantsDir)) {
+  const knownSlugs = new Set(
+    readdirSync(consultantsDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name)
+  );
+  for (const e of entries) {
+    if (e.candidate && !knownSlugs.has(e.candidate)) {
+      warn(`#${e.num}: Candidate "${e.candidate}" not found in consultants/ (may have been removed)`);
+      unknownSlugs++;
+    }
+  }
+}
+if (unknownSlugs === 0) ok('All candidate slugs resolve to roster entries');
 
 // --- Check 3: Report links ---
 let brokenReports = 0;
@@ -154,8 +176,8 @@ for (const line of lines) {
   if (!line.startsWith('|')) continue;
   if (line.includes('---') || line.includes('Empresa')) continue;
   const parts = line.split('|');
-  if (parts.length < 9) {
-    error(`Row with <9 columns: ${line.substring(0, 80)}...`);
+  if (parts.length < 11) { // 10 columns + 2 empty edge parts from pipe split
+    error(`Row with <10 columns: ${line.substring(0, 80)}...`);
     badRows++;
   }
 }

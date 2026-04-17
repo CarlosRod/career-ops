@@ -12,14 +12,19 @@
 
 | File | Path | When |
 |------|------|------|
-| cv.md | `cv.md` (project root) | ALWAYS |
-| article-digest.md | `article-digest.md` (if exists) | ALWAYS (detailed proof points) |
-| profile.yml | `config/profile.yml` | ALWAYS (candidate identity and targets) |
-| _profile.md | `modes/_profile.md` | ALWAYS (user archetypes, narrative, negotiation) |
+| Firm config | `config/firm.yml` | ALWAYS (firm identity, shortlist policy, comp floor) |
+| Consultant CVs | `consultants/{slug}/cv.md` | Per evaluation (one per consultant) |
+| Consultant profiles | `consultants/{slug}/profile.yml` | Per evaluation (identity, archetypes, comp targets) |
+| Consultant overrides | `consultants/{slug}/_profile.md` (if exists) | Per evaluation (per-consultant framing) |
+| Consultant proof points | `consultants/{slug}/article-digest.md` (if exists) | Per evaluation (detailed metrics) |
+| Consultant stories | `consultants/{slug}/story-bank.md` (if exists) | Interview prep, Block F |
+| Firm-level profile | `modes/_profile.md` | ALWAYS (firm negotiation scripts, location policy) |
 
-**RULE: NEVER hardcode metrics from proof points.** Read them from cv.md + article-digest.md at evaluation time.
+**Roster discovery:** Scan `consultants/*/profile.yml` — each directory with a valid `profile.yml` is a consultant.
+
+**RULE: NEVER hardcode metrics from proof points.** Read them from each consultant's cv.md + article-digest.md at evaluation time.
 **RULE: For article/project metrics, article-digest.md takes precedence over cv.md.**
-**RULE: Read _profile.md AFTER this file. User customizations in _profile.md override defaults here.**
+**RULE: Read `modes/_profile.md` AFTER this file (firm-level overrides). Then read `consultants/{slug}/_profile.md` (per-consultant overrides).**
 
 ---
 
@@ -41,6 +46,59 @@ The evaluation uses 6 blocks (A-F) with a global score of 1-5:
 - 4.0-4.4 → Good match, worth applying
 - 3.5-3.9 → Decent but not ideal, apply only if specific reason
 - Below 3.5 → Recommend against applying (see Ethical Use in CLAUDE.md)
+
+## Roster Evaluation (Consultancy Mode)
+
+When evaluating a JD, score **every** consultant in the roster, then apply the hybrid shortlist rule:
+
+1. **Location Eligibility Check** (BEFORE scoring) — extract location requirements from the JD (see "Location Eligibility" section below). Any consultant who fails the hard check gets an automatic ceiling of 1.0 with note "ineligible: location mismatch".
+2. **Mini Block B** — For each `consultants/*/profile.yml`, read their CV + digest + overrides. Compute a score (same 1-5 rubric) with a one-line rationale. Apply the location ceiling if relevant.
+3. **Hybrid shortlist** — Read `config/firm.yml` for the policy:
+   - `shortlist.policy: hybrid` → Top 1 consultant always + all others scoring ≥ `shortlist.threshold` (default 4.0)
+   - If `shortlist.min_score` is set and even the top-1 scores below it → empty shortlist, report says "No consultants met minimum threshold — manual review required"
+   - **If all consultants failed location check** → empty shortlist, report says "LOCATION MISMATCH: no consultant eligible to work in {region}"
+4. **Full evaluation** — Only for shortlisted consultants: full Block B (match), C (level), E (tailoring), F (STAR+R stories)
+5. **Shared blocks** — A (role summary), D (comp), G (legitimacy) are computed once for the JD, not per consultant
+
+**Output:** One report file with shortlist table + shared blocks + per-consultant sections. One PDF per shortlisted consultant. One tracker row per shortlisted consultant.
+
+## Location Eligibility
+
+Many JDs restrict hiring to specific countries or require work authorization the consultants don't have. Check this BEFORE scoring to avoid wasting evaluation effort and producing misleading shortlists.
+
+**Extract from JD (during Block A):**
+- Required country/region (e.g., "US", "EU", "Germany", "LATAM")
+- Work authorization clause (e.g., "must be authorized to work in the US without sponsorship", "US citizenship required", "Green Card holder")
+- Remote scope ("Remote US", "Remote Americas", "Remote Worldwide", "Hybrid {city}", "On-site {city}")
+
+**Cross-reference against each consultant's `profile.yml`:**
+- `location.country` — where the consultant lives
+- `location.visa_status` — any relevant work authorization (if present)
+
+**Hard blockers (score ceiling = 1.0, verdict SKIP):**
+
+| JD says | Consultant is in | Action |
+|---|---|---|
+| "Must be US citizen" / "US citizenship required" | Non-US, no US citizenship | SKIP — ineligible |
+| "Authorized to work in {country} without sponsorship required" | Different country, no local work authorization | SKIP — ineligible |
+| "On-site only, {city}" (no relocation mentioned) | Not in or commutable to that city | SKIP — ineligible |
+| "Remote, {specific country} only" | Different country | SKIP — ineligible |
+
+**Soft signals (reduce score, don't eliminate):**
+
+| JD says | Adjustment |
+|---|---|
+| "Remote, US" without explicit international eligibility | −0.5 (often still possible as contractor) |
+| "EST timezone only" and consultant in very different TZ | −0.3 |
+| "Hybrid, {city}" where consultant doesn't live there | −0.5 if relocation unclear |
+| "Preferred location: {city}" but role is remote-open | 0 (no adjustment — just a preference) |
+
+**Ambiguous cases — err on the side of flagging in notes, not blocking:**
+- "Remote, Americas" → LATAM consultants usually eligible. Score normally, flag in notes.
+- "US-based preferred" → soft signal, not hard block.
+- Location in JD title (e.g., "Senior Engineer, Chicago") but JD body says remote — trust the body.
+
+**Report all location mismatches clearly in the Shortlist table's Rationale column** so the user understands why a consultant was excluded.
 
 ## Posting Legitimacy (Block G)
 
@@ -83,7 +141,7 @@ Classify every offer into one of these types (or hybrid of 2):
 | AI Forward Deployed | "client-facing", "deploy", "prototype", "fast delivery", "field" |
 | AI Transformation | "change management", "adoption", "enablement", "transformation" |
 
-After detecting archetype, read `modes/_profile.md` for the user's specific framing and proof points for that archetype.
+After detecting archetype, read `modes/_profile.md` for firm-level defaults, then each consultant's `consultants/{slug}/_profile.md` for their specific framing and proof points for that archetype.
 
 ## Global Rules
 
@@ -101,10 +159,10 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 ### ALWAYS
 
 0. **Cover letter:** If the form allows it, ALWAYS include one. Same visual design as CV. JD quotes mapped to proof points. 1 page max.
-1. Read cv.md, _profile.md, and article-digest.md (if exists) before evaluating
+1. Read `config/firm.yml`, `modes/_profile.md`, and each consultant's files before evaluating
 1b. **First evaluation of each session:** Run `node cv-sync-check.mjs`. If warnings, notify user.
-2. Detect the role archetype and adapt framing per _profile.md
-3. Cite exact lines from CV when matching
+2. Detect the role archetype and adapt framing per consultant's `_profile.md`
+3. Cite exact lines from each consultant's CV when matching
 4. Use WebSearch for comp and company data
 5. Register in tracker after evaluating
 6. Generate content in the language of the JD (EN default)
@@ -121,7 +179,7 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 | WebSearch | Comp research, trends, company culture, LinkedIn contacts, fallback for JDs |
 | WebFetch | Fallback for extracting JDs from static pages |
 | Playwright | Verify offers (browser_navigate + browser_snapshot). **NEVER 2+ agents with Playwright in parallel.** |
-| Read | cv.md, _profile.md, article-digest.md, cv-template.html |
+| Read | config/firm.yml, consultants/{slug}/*.md, modes/_profile.md, cv-template.html |
 | Write | Temporary HTML for PDF, applications.md, reports .md |
 | Edit | Update tracker |
 | Canva MCP | Optional visual CV generation. Duplicate base design, edit text, export PDF. Requires `canva_resume_design_id` in profile.yml. |

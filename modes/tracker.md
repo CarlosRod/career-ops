@@ -1,23 +1,34 @@
-# Modo: tracker — Tracker de Aplicaciones
+# Mode: tracker — Application Tracker (Consultancy)
 
-Lee y muestra `data/applications.md`.
+Read and display `data/applications.md`.
 
-**Formato del tracker:**
+**10-column format:**
 ```markdown
-| # | Fecha | Empresa | Rol | Score | Estado | PDF | Report |
+| # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes |
 ```
 
-Estados posibles: `Evaluada` → `Aplicado` → `Respondido` → `Contacto` → `Entrevista` → `Oferta` / `Rechazada` / `Descartada` / `NO APLICAR`
+Canonical states (from `templates/states.yml`): `Evaluated` → `Applied` → `Responded` → `Interview` → `Offer` / `Rejected` / `Discarded` / `SKIP`
 
-- `Aplicado` = el candidato envió su candidatura
-- `Respondido` = Un recruiter/empresa contactó y el candidato respondió (inbound)
-- `Contacto` = El candidato contactó proactivamente a alguien de la empresa (outbound, ej: LinkedIn power move)
+If the user asks to update a status, edit the corresponding row.
 
-Si el usuario pide actualizar un estado, editar la fila correspondiente.
+## Filtering
 
-Mostrar también estadísticas:
-- Total de aplicaciones
-- Por estado
-- Score promedio
-- % con PDF generado
-- % con report generado
+Support filtering by consultant:
+- "show tracker for alice" → only rows where Candidate = alice
+- "show tracker" (no filter) → all rows, grouped by consultant
+
+## Statistics
+
+Show per-consultant and aggregate stats:
+
+### Per-consultant
+- Total evaluations
+- By status breakdown
+- Average score
+- % with PDF generated
+
+### Aggregate (firm-wide)
+- Total evaluations across all consultants
+- Active pipeline (not SKIP/Rejected/Discarded)
+- Top-scoring consultant per active role
+- Consultants with most activity this week

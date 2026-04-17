@@ -1,216 +1,201 @@
-# Modo: oferta — Evaluación Completa A-G
+# Mode: oferta — Full Evaluation A-G (Consultancy)
 
-Cuando el candidato pega una oferta (texto o URL), entregar SIEMPRE los 7 bloques (A-F evaluation + G legitimacy):
+When the user pastes a JD (text or URL), deliver ALL 7 blocks (A-F evaluation + G legitimacy) with roster-wide scoring.
 
-## Paso 0 — Detección de Arquetipo
+## Paso 0 — Fetch & Archetype Detection (shared)
 
-Clasificar la oferta en uno de los 6 arquetipos (ver `_shared.md`). Si es híbrido, indicar los 2 más cercanos. Esto determina:
-- Qué proof points priorizar en bloque B
-- Cómo reescribir el summary en bloque E
-- Qué historias STAR preparar en bloque F
+1. **Fetch JD** via Playwright (`browser_navigate` + `browser_snapshot`). Fallback: WebFetch. Save snapshot to `jds/{company-slug}-{role-slug}-{date}.md`.
+2. **Classify archetype** from the 6 types in `_shared.md` (or hybrid of 2). This determines how to frame each consultant's match.
+3. **Re-eval check:** Scan `reports/` for an existing report whose `**URL:**` normalizes to the same key. If found → re-evaluation flow (update in place, keep original `###`).
 
-## Bloque A — Resumen del Rol
+## Block A — Role Summary (shared, computed once)
 
-Tabla con:
-- Arquetipo detectado
+Table with:
+- Detected archetype
 - Domain (platform/agentic/LLMOps/ML/enterprise)
 - Function (build/consult/manage/deploy)
 - Seniority
 - Remote (full/hybrid/onsite)
-- Team size (si se menciona)
-- TL;DR en 1 frase
+- Team size (if mentioned)
+- TL;DR in 1 sentence
 
-## Bloque B — Match con CV
+## Roster Scoring Loop — Mini Block B
 
-Lee `cv.md`. Crea tabla con cada requisito del JD mapeado a líneas exactas del CV.
+Read `config/firm.yml` for shortlist policy. Then for **each** consultant in `consultants/*/profile.yml`:
 
-**Adaptado al arquetipo:**
-- Si FDE → priorizar proof points de delivery rápida y client-facing
-- Si SA → priorizar diseño de sistemas e integrations
-- Si PM → priorizar product discovery y métricas
-- Si LLMOps → priorizar evals, observability, pipelines
-- Si Agentic → priorizar multi-agent, HITL, orchestration
-- Si Transformation → priorizar change management, adoption, scaling
+1. Read their `cv.md`, `article-digest.md` (if exists), `_profile.md` (if exists), `profile.yml`
+2. **Location eligibility check first** (see `_shared.md` → "Location Eligibility"): compare JD's required location/work-auth against the consultant's `location.country` and `visa_status`. If hard blocker → ceiling score at 1.0, rationale = "ineligible: location mismatch ({reason})".
+3. Otherwise, score against the JD using the same 1-5 rubric as full Block B, but **abbreviated**: score + one-line rationale only. Apply soft-signal adjustments for location if applicable.
+4. Collect results into array: `{slug, score, rationale}`
 
-Sección de **gaps** con estrategia de mitigación para cada uno. Para cada gap:
-1. ¿Es un hard blocker o un nice-to-have?
-2. ¿Puede el candidato demostrar experiencia adyacente?
-3. ¿Hay un proyecto portfolio que cubra este gap?
-4. Plan de mitigación concreto (frase para cover letter, proyecto rápido, etc.)
+**Output:** Shortlist ranking table (all consultants, sorted by score):
 
-## Bloque C — Nivel y Estrategia
+| Rank | Consultant | Score | Rationale | Verdict |
+|------|------------|-------|-----------|---------|
+| 1 | alice | 4.6 | Strong LLMOps background, direct eval framework experience | PITCH |
+| 2 | bob | 4.1 | Good platform skills, lacks agent orchestration depth | PITCH |
+| 3 | carol | 3.2 | Frontend focus, minimal AI infrastructure overlap | SKIP |
 
-1. **Nivel detectado** en el JD vs **nivel natural del candidato para ese arquetipo**
-2. **Plan "vender senior sin mentir"**: frases específicas adaptadas al arquetipo, logros concretos a destacar, cómo posicionar la experiencia de founder como ventaja
-3. **Plan "si me downlevelan"**: aceptar si comp es justa, negociar review a 6 meses, criterios de promoción claros
+**Hybrid shortlist rule** (from `config/firm.yml`):
+- Top 1 always shortlisted (unless below `shortlist.min_score` floor OR flagged as location-ineligible)
+- All others scoring ≥ `shortlist.threshold` (default 4.0) also shortlisted
+- Consultants below threshold get verdict `SKIP (below threshold)`
+- Location-ineligible consultants get verdict `SKIP (location mismatch)` regardless of other scores
+- If `shortlist.min_score` is set and even top-1 is below → "No consultants met minimum threshold — manual review required"
+- **If ALL consultants are location-ineligible** → empty shortlist, report title notes "LOCATION MISMATCH: no consultant eligible to work in {region}". Skip Blocks B/C/E/F/PDFs/tracker rows.
 
-## Bloque D — Comp y Demanda
+## Per-Consultant Evaluation (only for shortlisted consultants)
 
-Usar WebSearch para:
-- Salarios actuales del rol (Glassdoor, Levels.fyi, Blind)
-- Reputación de compensación de la empresa
-- Tendencia de demanda del rol
+For each PITCH consultant, generate full blocks B, C, E, F using **that consultant's** files:
 
-Tabla con datos y fuentes citadas. Si no hay datos, decirlo en vez de inventar.
+### Block B — CV Match
 
-## Bloque E — Plan de Personalización
+Read `consultants/{slug}/cv.md`. Map each JD requirement to exact lines from their CV.
 
-| # | Sección | Estado actual | Cambio propuesto | Por qué |
-|---|---------|---------------|------------------|---------|
+**Archetype-adapted:**
+- FDE → prioritize fast delivery and client-facing proof points
+- SA → prioritize system design and integrations
+- PM → prioritize product discovery and metrics
+- LLMOps → prioritize evals, observability, pipelines
+- Agentic → prioritize multi-agent, HITL, orchestration
+- Transformation → prioritize change management, adoption, scaling
+
+**Gaps** section with mitigation strategy for each gap:
+1. Hard blocker or nice-to-have?
+2. Can this consultant demonstrate adjacent experience?
+3. Is there a portfolio project that covers this gap?
+4. Concrete mitigation plan (cover letter phrase, quick project, etc.)
+
+### Block C — Level & Strategy
+
+1. **Level detected** in JD vs **consultant's natural level for this archetype**
+2. **"Sell senior without lying" plan**: specific phrases adapted to archetype, concrete achievements to highlight
+3. **"If downleveled" plan**: accept if comp is fair, negotiate 6-month review, clear promotion criteria
+
+### Block E — CV Customization Plan
+
+| # | Section | Current state | Proposed change | Why |
+|---|---------|---------------|-----------------|-----|
 | 1 | Summary | ... | ... | ... |
-| ... | ... | ... | ... | ... |
 
-Top 5 cambios al CV + Top 5 cambios a LinkedIn para maximizar match.
+Top 5 CV changes + Top 5 LinkedIn changes to maximize match for this consultant.
 
-## Bloque F — Plan de Entrevistas
+### Block F — Interview Plan
 
-6-10 historias STAR+R mapeadas a requisitos del JD (STAR + **Reflection**):
+6-10 STAR+R stories mapped to JD requirements:
 
-| # | Requisito del JD | Historia STAR+R | S | T | A | R | Reflection |
-|---|-----------------|-----------------|---|---|---|---|------------|
+| # | JD Requirement | STAR+R Story | S | T | A | R | Reflection |
 
-The **Reflection** column captures what was learned or what would be done differently. This signals seniority — junior candidates describe what happened, senior candidates extract lessons.
+**Story Bank:** Check `consultants/{slug}/story-bank.md`. Append new stories whose title slug isn't already present.
 
-**Story Bank:** If `interview-prep/story-bank.md` exists, check if any of these stories are already there. If not, append new ones. Over time this builds a reusable bank of 5-10 master stories that can be adapted to any interview question.
+**Archetype-framed:**
+- FDE → emphasize delivery speed and client-facing
+- SA → emphasize architecture decisions
+- PM → emphasize discovery and trade-offs
+- LLMOps → emphasize metrics, evals, production hardening
+- Agentic → emphasize orchestration, error handling, HITL
+- Transformation → emphasize adoption, organizational change
 
-**Seleccionadas y enmarcadas según el arquetipo:**
-- FDE → enfatizar velocidad de entrega y client-facing
-- SA → enfatizar decisiones de arquitectura
-- PM → enfatizar discovery y trade-offs
-- LLMOps → enfatizar métricas, evals, production hardening
-- Agentic → enfatizar orchestration, error handling, HITL
-- Transformation → enfatizar adopción, cambio organizacional
+Also include:
+- 1 recommended case study (which project to present and how)
+- Red-flag questions and how to answer them
 
-Incluir también:
-- 1 case study recomendado (cuál de sus proyectos presentar y cómo)
-- Preguntas red-flag y cómo responderlas (ej: "¿por qué vendiste tu empresa?", "¿tienes equipo de reports?")
+## Block D — Comp & Demand (shared, computed once)
 
-## Bloque G — Posting Legitimacy
+Use WebSearch for:
+- Current salaries for the role (Glassdoor, Levels.fyi, Blind)
+- Company compensation reputation
+- Role demand trends
 
-Analyze the job posting for signals that indicate whether this is a real, active opening. This helps the user prioritize their effort on opportunities most likely to result in a hiring process.
+Table with data and cited sources. If no data available, say so rather than inventing.
 
-**Ethical framing:** Present observations, not accusations. Every signal has legitimate explanations. The user decides how to weigh them.
+Compare against each shortlisted consultant's `compensation.target_range` from their `profile.yml`.
 
-### Signals to analyze (in order):
+## Block G — Posting Legitimacy (shared, computed once)
 
-**1. Posting Freshness** (from Playwright snapshot, already captured in Paso 0):
-- Date posted or "X days ago" -- extract from page
-- Apply button state (active / closed / missing / redirects to generic page)
-- If URL redirected to generic careers page, note it
+Analyze the job posting for signals that indicate whether this is a real, active opening. See `_shared.md` for the full signal taxonomy, tiers, and ethical framing.
 
-**2. Description Quality** (from JD text):
-- Does it name specific technologies, frameworks, tools?
-- Does it mention team size, reporting structure, or org context?
-- Are requirements realistic? (years of experience vs technology age)
-- Is there a clear scope for the first 6-12 months?
-- Is salary/compensation mentioned?
-- What ratio of the JD is role-specific vs generic boilerplate?
-- Any internal contradictions? (entry-level title + staff requirements, etc.)
-
-**3. Company Hiring Signals** (2-3 WebSearch queries, combine with Block D research):
-- Search: `"{company}" layoffs {year}` -- note date, scale, departments
-- Search: `"{company}" hiring freeze {year}` -- note any announcements
-- If layoffs found: are they in the same department as this role?
-
-**4. Reposting Detection** (from scan-history.tsv):
-- Check if company + similar role title appeared before with a different URL
-- Note how many times and over what period
-
-**5. Role Market Context** (qualitative, no additional queries):
-- Is this a common role that typically fills in 4-6 weeks?
-- Does the role make sense for this company's business?
-- Is the seniority level one that legitimately takes longer to fill?
-
-### Output format:
-
-**Assessment:** One of three tiers:
-- **High Confidence** -- Multiple signals suggest a real, active opening
-- **Proceed with Caution** -- Mixed signals worth noting
-- **Suspicious** -- Multiple ghost job indicators, investigate before investing time
-
-**Signals table:** Each signal observed with its finding and weight (Positive / Neutral / Concerning).
-
-**Context Notes:** Any caveats (niche role, government job, evergreen position, etc.) that explain potentially concerning signals.
-
-### Edge case handling:
-- **Government/academic postings:** Longer timelines are standard. Adjust thresholds (60-90 days is normal).
-- **Evergreen/continuous hire postings:** If the JD explicitly says "ongoing" or "rolling," note it as context -- this is not a ghost job, it is a pipeline role.
-- **Niche/executive roles:** Staff+, VP, Director, or highly specialized roles legitimately stay open for months. Adjust age thresholds accordingly.
-- **Startup / pre-revenue:** Early-stage companies may have vague JDs because the role is genuinely undefined. Weight description vagueness less heavily.
-- **No date available:** If posting age cannot be determined and no other signals are concerning, default to "Proceed with Caution" with a note that limited data was available. NEVER default to "Suspicious" without evidence.
-- **Recruiter-sourced (no public posting):** Freshness signals unavailable. Note that active recruiter contact is itself a positive legitimacy signal.
+Output: tier assessment + signals table + context notes.
 
 ---
 
-## Post-evaluación
+## Post-Evaluation
 
-**SIEMPRE** después de generar los bloques A-G:
+**ALWAYS** after generating blocks A-G:
 
-### 1. Guardar report .md
+### 1. Save report .md
 
-Guardar evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
+Save to `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 
-- `{###}` = siguiente número secuencial (3 dígitos, zero-padded)
-- `{company-slug}` = nombre de empresa en lowercase, sin espacios (usar guiones)
-- `{YYYY-MM-DD}` = fecha actual
+- `{###}` = next sequential number (3-digit, zero-padded). For re-evals, keep the original `###`.
+- Re-evals: add `**Last re-evaluated:** YYYY-MM-DD` to header; keep original `**Date:**`.
 
-**Formato del report:**
+**Report format:**
 
 ```markdown
-# Evaluación: {Empresa} — {Rol}
+# Evaluation: {Company} — {Role}
 
-**Fecha:** {YYYY-MM-DD}
-**Arquetipo:** {detectado}
-**Score:** {X/5}
+**Date:** {YYYY-MM-DD}
+**URL:** {url}
 **Legitimacy:** {High Confidence | Proceed with Caution | Suspicious}
-**PDF:** {ruta o pendiente}
+**Shortlist:** {slug1}, {slug2}
+**PDFs:** output/cv-{slug1}-{company}-{date}.pdf, output/cv-{slug2}-...
 
 ---
 
-## A) Resumen del Rol
-(contenido completo del bloque A)
+## Shortlist (Hybrid: top 1 + score >= {threshold})
 
-## B) Match con CV
-(contenido completo del bloque B)
+| Rank | Consultant | Score | Verdict |
+|------|------------|-------|---------|
+| 1 | alice | 4.6 | PITCH |
+| 2 | bob | 4.1 | PITCH |
+| 3 | carol | 3.2 | SKIP (below threshold) |
 
-## C) Nivel y Estrategia
-(contenido completo del bloque C)
+## A) Role Summary
+(shared content)
 
-## D) Comp y Demanda
-(contenido completo del bloque D)
-
-## E) Plan de Personalización
-(contenido completo del bloque E)
-
-## F) Plan de Entrevistas
-(contenido completo del bloque F)
+## D) Comp & Demand
+(shared content)
 
 ## G) Posting Legitimacy
-(contenido completo del bloque G)
+(shared content)
 
-## H) Draft Application Answers
-(solo si score >= 4.5 — borradores de respuestas para el formulario de aplicación)
+## Per-Consultant Evaluations
 
----
+### alice (4.6/5 — PITCH)
+#### B) CV Match
+(alice-specific content)
+#### C) Level & Strategy
+(alice-specific content)
+#### E) CV Customization Plan
+(alice-specific content)
+#### F) Interview Plan (STAR+R)
+(alice-specific content)
 
-## Keywords extraídas
-(lista de 15-20 keywords del JD para ATS optimization)
+### bob (4.1/5 — PITCH)
+#### B) CV Match
+(bob-specific content)
+...
+
+## Keywords
+(15-20 JD keywords for ATS optimization)
 ```
 
-### 2. Registrar en tracker
+### 2. Register in tracker
 
-**SIEMPRE** registrar en `data/applications.md`:
-- Siguiente número secuencial
-- Fecha actual
-- Empresa
-- Rol
-- Score: promedio de match (1-5)
-- Estado: `Evaluada`
-- PDF: ❌ (o ✅ si auto-pipeline generó PDF)
-- Report: link relativo al report .md (ej: `[001](reports/001-company-2026-01-01.md)`)
+For **each** shortlisted consultant, write one TSV to `batch/tracker-additions/{num}-{candidate-slug}.tsv`:
 
-**Formato del tracker:**
-
-```markdown
-| # | Fecha | Empresa | Rol | Score | Estado | PDF | Report |
 ```
+{num}\t{date}\t{company}\t{role}\t{slug}\tEvaluated\t{score}/5\t❌\t[{num}](reports/{num}-{company-slug}-{date}.md)\t{note}
+```
+
+Then run `node merge-tracker.mjs` to incorporate into `data/applications.md`.
+
+**Re-eval behavior:**
+- Shortlisted consultant already has a row → update score, preserve status, prepend note `Re-eval YYYY-MM-DD (oldScore→newScore)`
+- New consultant now above threshold → new row added
+- Consultant dropped below threshold → existing row preserved, note appended
+
+### 3. Update story banks
+
+For each shortlisted consultant, append new STAR+R stories from Block F to `consultants/{slug}/story-bank.md` (only if story title slug not already present).

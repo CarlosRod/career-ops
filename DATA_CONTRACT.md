@@ -2,29 +2,33 @@
 
 This document defines which files belong to the **system** (auto-updatable) and which belong to the **user** (never touched by updates).
 
-## User Layer (NEVER auto-updated)
+## User Layer
 
-These files contain your personal data, customizations, and work product. Updates will NEVER modify them.
+These files contain firm and consultant data, customizations, and work product.
+
+> **Note:** This fork has no automatic update mechanism (Decision 6a — hard fork). The User/System distinction is retained for documentation clarity but is not enforced by any process.
 
 | File | Purpose |
 |------|---------|
-| `cv.md` | Your CV in markdown |
-| `config/profile.yml` | Your identity, targets, comp range |
-| `modes/_profile.md` | Your archetypes, narrative, negotiation scripts |
-| `article-digest.md` | Your proof points from portfolio |
-| `interview-prep/story-bank.md` | Your accumulated STAR+R stories |
-| `portals.yml` | Your customized company list |
-| `data/applications.md` | Your application tracker |
-| `data/pipeline.md` | Your URL inbox |
-| `data/scan-history.tsv` | Your scan history |
-| `data/follow-ups.md` | Your follow-up history |
-| `reports/*` | Your evaluation reports |
-| `output/*` | Your generated PDFs |
-| `jds/*` | Your saved job descriptions |
+| `config/firm.yml` | Firm identity, shortlist policy, comp floor |
+| `consultants/*/cv.md` | Per-consultant CV in markdown |
+| `consultants/*/profile.yml` | Per-consultant identity, targets, comp range |
+| `consultants/*/_profile.md` | Per-consultant archetypes, narrative overrides |
+| `consultants/*/article-digest.md` | Per-consultant proof points from portfolio |
+| `consultants/*/story-bank.md` | Per-consultant accumulated STAR+R stories |
+| `modes/_profile.md` | Firm-level negotiation scripts, location policy |
+| `portals.yml` | Customized company list |
+| `data/applications.md` | Application tracker (10-column, includes Candidate) |
+| `data/pipeline.md` | URL inbox |
+| `data/scan-history.tsv` | Scan history |
+| `data/follow-ups.md` | Follow-up history |
+| `reports/*` | Evaluation reports |
+| `output/*` | Generated PDFs |
+| `jds/*` | Saved job descriptions |
 
-## System Layer (safe to auto-update)
+## System Layer
 
-These files contain system logic, scripts, templates, and instructions that improve with each release.
+These files contain system logic, scripts, templates, and instructions.
 
 | File | Purpose |
 |------|---------|
@@ -60,6 +64,4 @@ These files contain system logic, scripts, templates, and instructions that impr
 
 ## The Rule
 
-**If a file is in the User Layer, no update process may read, modify, or delete it.**
-
-**If a file is in the System Layer, it can be safely replaced with the latest version from the upstream repo.**
+**User Layer files contain firm/consultant data and customizations.** System Layer files contain shared logic. This distinction helps maintainers understand which files carry user state and should be handled carefully during refactors.

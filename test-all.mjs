@@ -63,12 +63,11 @@ for (const f of mjsFiles) {
 console.log('\n2. Script execution (graceful on empty data)');
 
 const scripts = [
-  { name: 'cv-sync-check.mjs', expectExit: 1, allowFail: true }, // fails without cv.md (normal in repo)
+  { name: 'cv-sync-check.mjs', expectExit: 1, allowFail: true }, // fails without consultants/ (normal in repo)
   { name: 'verify-pipeline.mjs', expectExit: 0 },
   { name: 'normalize-statuses.mjs', expectExit: 0 },
   { name: 'dedup-tracker.mjs', expectExit: 0 },
   { name: 'merge-tracker.mjs', expectExit: 0 },
-  { name: 'update-system.mjs check', expectExit: 0 },
 ];
 
 for (const { name, allowFail } of scripts) {
@@ -155,7 +154,7 @@ for (const f of systemFiles) {
 
 // Check user files are NOT tracked (gitignored)
 const userFiles = [
-  'config/profile.yml', 'modes/_profile.md', 'portals.yml',
+  'config/profile.yml', 'config/firm.yml', 'modes/_profile.md', 'portals.yml',
 ];
 for (const f of userFiles) {
   const tracked = run('git', ['ls-files', f]);
@@ -267,9 +266,9 @@ console.log('\n9. CLAUDE.md integrity');
 
 const claude = readFile('CLAUDE.md');
 const requiredSections = [
-  'Data Contract', 'Update Check', 'Ethical Use',
+  'Data Contract', 'Ethical Use',
   'Offer Verification', 'Canonical States', 'TSV Format',
-  'First Run', 'Onboarding',
+  'First Run', 'Onboarding', 'Candidate',
 ];
 
 for (const section of requiredSections) {
@@ -280,9 +279,56 @@ for (const section of requiredSections) {
   }
 }
 
-// ── 10. VERSION FILE ─────────────────────────────────────────────
+// ── 10. CONSULTANCY LAYOUT ──────────────────────────────────────
 
-console.log('\n10. Version file');
+console.log('\n10. Consultancy layout');
+
+if (fileExists('config/firm.example.yml')) {
+  pass('config/firm.example.yml exists');
+} else {
+  fail('config/firm.example.yml missing');
+}
+
+if (fileExists('consultants/README.md')) {
+  pass('consultants/README.md exists');
+} else {
+  fail('consultants/README.md missing');
+}
+
+if (fileExists('migrate-to-consultancy.mjs')) {
+  pass('migrate-to-consultancy.mjs exists');
+} else {
+  fail('migrate-to-consultancy.mjs missing');
+}
+
+if (fileExists('lib/normalize.mjs')) {
+  pass('lib/normalize.mjs exists');
+  // Verify it exports expected functions
+  try {
+    const mod = await import(pathToFileURL(join(ROOT, 'lib/normalize.mjs')).href);
+    if (typeof mod.normalizeCompany === 'function' && typeof mod.roleMatch === 'function') {
+      pass('lib/normalize.mjs exports normalizeCompany and roleMatch');
+    } else {
+      fail('lib/normalize.mjs missing expected exports');
+    }
+  } catch (e) {
+    fail(`lib/normalize.mjs import failed: ${e.message}`);
+  }
+} else {
+  fail('lib/normalize.mjs missing');
+}
+
+// Check 10-col header format in CLAUDE.md
+const claudeContent = readFile('CLAUDE.md');
+if (claudeContent.includes('| # | Date | Company | Role | Candidate | Score | Status | PDF | Report | Notes |')) {
+  pass('CLAUDE.md has 10-column tracker header');
+} else {
+  fail('CLAUDE.md missing 10-column tracker header');
+}
+
+// ── 11. VERSION FILE ─────────────────────────────────────────────
+
+console.log('\n11. Version file');
 
 if (fileExists('VERSION')) {
   const version = readFile('VERSION').trim();
